@@ -409,3 +409,4 @@ O repositório foi construído seguindo o modelo **Gitflow** e convenções de *
 
 *Prof. Cainã Antunes Silva*  
 *Técnicas de Programação II*
+*Vinícius Pereira De Souza*
