@@ -84,6 +84,12 @@ public class Main {
                 VendaController vendaController = new VendaController(mainFrame, produtoService, vendaService, clienteService, servicoService);
                 vendaController.abrirVenda();
 
+                // Conecta os botões da barra superior de navegação para recarregar dados atualizados ao clicar
+                mainFrame.getBtnNavVendas().addActionListener(e -> vendaController.abrirVenda());
+                mainFrame.getBtnNavProdutos().addActionListener(e -> produtoController.recarregar());
+                mainFrame.getBtnNavClientes().addActionListener(e -> clienteController.recarregar());
+                mainFrame.getBtnNavServicos().addActionListener(e -> servicoController.recarregar());
+
                 // Encerramento limpo de conexões ao fechar janela
                 mainFrame.addWindowListener(new WindowAdapter() {
                     @Override
@@ -107,16 +113,24 @@ public class Main {
             Class.forName("org.h2.Driver");
             try (Connection conn = DriverManager.getConnection("jdbc:h2:./data/pdv_db;DB_CLOSE_DELAY=-1;AUTO_SERVER=TRUE", "sa", "");
                  Statement stmt = conn.createStatement()) {
-                stmt.execute("CREATE TABLE IF NOT EXISTS itens_venda (id BIGINT AUTO_INCREMENT PRIMARY KEY)");
-                stmt.execute("ALTER TABLE itens_venda ADD COLUMN IF NOT EXISTS tipo_item VARCHAR(20) DEFAULT 'PRODUTO'");
-                stmt.execute("ALTER TABLE itens_venda ADD COLUMN IF NOT EXISTS servico_id BIGINT");
-                stmt.execute("ALTER TABLE itens_venda ADD COLUMN IF NOT EXISTS pet_id BIGINT");
-                stmt.execute("ALTER TABLE itens_venda ADD COLUMN IF NOT EXISTS pet_nome VARCHAR(80)");
-                stmt.execute("ALTER TABLE itens_venda ALTER COLUMN produto_id DROP NOT NULL");
-                stmt.execute("ALTER TABLE vendas ADD COLUMN IF NOT EXISTS cliente_id BIGINT");
+                // Atualiza de forma segura cada coluna sem criar tabelas incompletas artificialmente
+                executarSqlSilencioso(stmt, "ALTER TABLE itens_venda ADD COLUMN IF NOT EXISTS tipo_item VARCHAR(20) DEFAULT 'PRODUTO'");
+                executarSqlSilencioso(stmt, "ALTER TABLE itens_venda ADD COLUMN IF NOT EXISTS servico_id BIGINT");
+                executarSqlSilencioso(stmt, "ALTER TABLE itens_venda ADD COLUMN IF NOT EXISTS pet_id BIGINT");
+                executarSqlSilencioso(stmt, "ALTER TABLE itens_venda ADD COLUMN IF NOT EXISTS pet_nome VARCHAR(80)");
+                executarSqlSilencioso(stmt, "ALTER TABLE itens_venda ALTER COLUMN produto_id DROP NOT NULL");
+                executarSqlSilencioso(stmt, "ALTER TABLE vendas ADD COLUMN IF NOT EXISTS cliente_id BIGINT");
             }
         } catch (Exception ignored) {
-            // Se o banco ainda não existe, o Hibernate cria do zero normalmente
+            // Se o banco ainda não existe, o Hibernate cria do zero normalmente com o schema completo
+        }
+    }
+
+    private static void executarSqlSilencioso(Statement stmt, String sql) {
+        try {
+            stmt.execute(sql);
+        } catch (Exception ignored) {
+            // Ignora silenciosamente caso a tabela ou coluna ainda não existam nesta etapa
         }
     }
 

@@ -34,6 +34,10 @@ public class ServicoController implements ServicoObserver {
         this.service.notificarObservadores();
     }
 
+    public void recarregar() {
+        this.service.notificarObservadores();
+    }
+
     private void vincularEventos() {
         view.getBtnNovo().addActionListener(e -> onNovoServico());
         view.getBtnEditar().addActionListener(e -> onEditarServico());

@@ -94,6 +94,9 @@ public class ServicoListView extends JPanel {
                     s.getDescricao() != null ? s.getDescricao() : "-"
             });
         }
+        if (!servicosExibidos.isEmpty()) {
+            tabela.setRowSelectionInterval(0, 0);
+        }
     }
 
     public Servico getServicoSelecionado() {

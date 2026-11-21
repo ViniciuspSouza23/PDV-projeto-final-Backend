@@ -36,6 +36,10 @@ public class ClienteController implements ClienteObserver {
         this.service.notificarObservadores();
     }
 
+    public void recarregar() {
+        this.service.notificarObservadores();
+    }
+
     private void vincularEventos() {
         view.getBtnNovoCliente().addActionListener(e -> onNovoCliente());
         view.getBtnEditarCliente().addActionListener(e -> onEditarCliente());

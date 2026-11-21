@@ -91,10 +91,20 @@ public class VendaController implements ProdutoObserver, ClienteObserver, Servic
 
     private void onTutorMudou() {
         Cliente tutor = vendaView.getTutorSelecionado();
-        if (tutor != null && tutor.getPets() != null) {
+        if (tutor != null && tutor.getPets() != null && !tutor.getPets().isEmpty()) {
             vendaView.setPetsDoTutor(tutor.getPets());
+            vendaView.getCbPet().setEnabled(true);
+            vendaView.getTxtClienteAvulso().setText("");
+            vendaView.getTxtClienteAvulso().setEnabled(false);
+        } else if (tutor != null) {
+            vendaView.setPetsDoTutor(List.of());
+            vendaView.getCbPet().setEnabled(false);
+            vendaView.getTxtClienteAvulso().setText("");
+            vendaView.getTxtClienteAvulso().setEnabled(false);
         } else {
             vendaView.setPetsDoTutor(List.of());
+            vendaView.getCbPet().setEnabled(false);
+            vendaView.getTxtClienteAvulso().setEnabled(true);
         }
         atualizarPrecoServicoPreview();
     }
@@ -196,10 +206,39 @@ public class VendaController implements ProdutoObserver, ClienteObserver, Servic
         new SwingWorker<DadosCompletosVenda, Void>() {
             @Override
             protected DadosCompletosVenda doInBackground() {
-                List<Produto> produtos = produtoService.listarTodos();
-                List<Venda> vendas = vendaService.listarTodas();
-                List<Cliente> clientes = (clienteService != null) ? clienteService.listarTodos() : List.of();
-                List<Servico> servicos = (servicoService != null) ? servicoService.listarTodos() : List.of();
+                List<Produto> produtos = List.of();
+                List<Venda> vendas = List.of();
+                List<Cliente> clientes = List.of();
+                List<Servico> servicos = List.of();
+
+                try {
+                    produtos = produtoService.listarTodos();
+                } catch (Exception e) {
+                    System.err.println("[PetPDV] Erro ao carregar produtos: " + e.getMessage());
+                }
+
+                try {
+                    vendas = vendaService.listarTodas();
+                } catch (Exception e) {
+                    System.err.println("[PetPDV] Erro ao carregar vendas: " + e.getMessage());
+                }
+
+                try {
+                    if (clienteService != null) {
+                        clientes = clienteService.listarTodos();
+                    }
+                } catch (Exception e) {
+                    System.err.println("[PetPDV] Erro ao carregar clientes: " + e.getMessage());
+                }
+
+                try {
+                    if (servicoService != null) {
+                        servicos = servicoService.listarTodos();
+                    }
+                } catch (Exception e) {
+                    System.err.println("[PetPDV] Erro ao carregar serviços: " + e.getMessage());
+                }
+
                 return new DadosCompletosVenda(produtos, vendas, clientes, servicos);
             }
 
@@ -211,6 +250,7 @@ public class VendaController implements ProdutoObserver, ClienteObserver, Servic
                     vendaView.setHistorico(dados.vendas());
                     vendaView.setTutores(dados.clientes());
                     vendaView.setServicos(dados.servicos());
+                    onTutorMudou();
                     atualizarPrecoServicoPreview();
                 } catch (InterruptedException ex) {
                     Thread.currentThread().interrupt();
@@ -288,6 +328,7 @@ public class VendaController implements ProdutoObserver, ClienteObserver, Servic
     @Override
     public void onClientesChanged(List<Cliente> clientes) {
         vendaView.setTutores(clientes);
+        onTutorMudou();
     }
 
     @Override

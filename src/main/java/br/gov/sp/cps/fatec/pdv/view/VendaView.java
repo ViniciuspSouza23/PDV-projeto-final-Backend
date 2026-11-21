@@ -107,6 +107,8 @@ public class VendaView extends JPanel {
         add(abas, BorderLayout.CENTER);
 
         configurarRenderizadores();
+        setPetsDoTutor(List.of());
+        cbPet.setEnabled(false);
     }
 
     private JPanel criarPainelNovaVenda() {
@@ -270,6 +272,9 @@ public class VendaView extends JPanel {
             for (Produto p : produtos) modelo.addElement(p);
         }
         cbProduto.setModel(modelo);
+        if (modelo.getSize() > 0) {
+            cbProduto.setSelectedIndex(0);
+        }
     }
 
     public void setServicos(List<Servico> servicos) {
@@ -278,6 +283,9 @@ public class VendaView extends JPanel {
             for (Servico s : servicos) modelo.addElement(s);
         }
         cbServico.setModel(modelo);
+        if (modelo.getSize() > 0) {
+            cbServico.setSelectedIndex(0);
+        }
     }
 
     public void setTutores(List<Cliente> tutores) {
@@ -287,6 +295,7 @@ public class VendaView extends JPanel {
             for (Cliente c : tutores) modelo.addElement(c);
         }
         cbTutor.setModel(modelo);
+        cbTutor.setSelectedIndex(0);
     }
 
     public void setPetsDoTutor(List<Pet> pets) {
@@ -296,6 +305,11 @@ public class VendaView extends JPanel {
             for (Pet p : pets) modelo.addElement(p);
         }
         cbPet.setModel(modelo);
+        if (pets != null && !pets.isEmpty()) {
+            cbPet.setSelectedIndex(1);
+        } else {
+            cbPet.setSelectedIndex(0);
+        }
     }
 
     public void adicionarItemNoCarrinho(ItemVenda item) {
@@ -397,6 +411,10 @@ public class VendaView extends JPanel {
 
     public Pet getPetSelecionado() {
         return (Pet) cbPet.getSelectedItem();
+    }
+
+    public JTextField getTxtClienteAvulso() {
+        return txtClienteAvulso;
     }
 
     public String getClienteNomeAvulso() {

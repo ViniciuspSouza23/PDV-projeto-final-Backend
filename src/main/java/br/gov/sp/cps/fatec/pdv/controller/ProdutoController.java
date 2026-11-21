@@ -76,7 +76,13 @@ public class ProdutoController implements ProdutoObserver {
     public void inicializar() {
         this.service.addObserver(this);
         this.service.notificarObservadores();
-        this.mainFrame.mostrarLista();
+    }
+
+    /**
+     * Recarrega os dados de produtos via camada de serviço.
+     */
+    public void recarregar() {
+        this.service.notificarObservadores();
     }
 
     /**

@@ -138,6 +138,9 @@ public class ClientePetView extends JPanel {
                     c.getPets() != null ? c.getPets().size() : 0
             });
         }
+        if (!clientesExibidos.isEmpty()) {
+            tabelaClientes.setRowSelectionInterval(0, 0);
+        }
         atualizarTabelaPetsDoTutorSelecionado();
     }
 

@@ -34,6 +34,11 @@ public class MainFrame extends JFrame {
     private final ClientePetView clientePetView;
     private final ServicoListView servicoListView;
 
+    private final JButton btnNavVendas;
+    private final JButton btnNavProdutos;
+    private final JButton btnNavClientes;
+    private final JButton btnNavServicos;
+
     public MainFrame() {
         super("PetPDV - Sistema Integrado de Pet Shop & Clínica");
 
@@ -45,6 +50,11 @@ public class MainFrame extends JFrame {
         this.vendaView = new VendaView();
         this.clientePetView = new ClientePetView();
         this.servicoListView = new ServicoListView();
+
+        this.btnNavVendas = criarBotaoNav("🛒 Caixa / Vendas", () -> mostrarVenda());
+        this.btnNavProdutos = criarBotaoNav("📦 Produtos (Estoque)", () -> mostrarLista());
+        this.btnNavClientes = criarBotaoNav("🐾 Tutores & Pets", () -> mostrarClientes());
+        this.btnNavServicos = criarBotaoNav("✂️ Serviços (Banho & Tosa)", () -> mostrarServicos());
 
         // Adiciona as telas ao container gerenciado por CardLayout
         this.painelPrincipal.add(vendaView, TELA_VENDA);
@@ -76,11 +86,6 @@ public class MainFrame extends JFrame {
                 BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(220, 224, 230)),
                 BorderFactory.createEmptyBorder(6, 12, 6, 12)
         ));
-
-        JButton btnNavVendas = criarBotaoNav("🛒 Caixa / Vendas", () -> mostrarVenda());
-        JButton btnNavProdutos = criarBotaoNav("📦 Produtos (Estoque)", () -> mostrarLista());
-        JButton btnNavClientes = criarBotaoNav("🐾 Tutores & Pets", () -> mostrarClientes());
-        JButton btnNavServicos = criarBotaoNav("✂️ Serviços (Banho & Tosa)", () -> mostrarServicos());
 
         nav.add(btnNavVendas);
         nav.add(btnNavProdutos);
@@ -136,5 +141,21 @@ public class MainFrame extends JFrame {
 
     public ServicoListView getServicoListView() {
         return servicoListView;
+    }
+
+    public JButton getBtnNavVendas() {
+        return btnNavVendas;
+    }
+
+    public JButton getBtnNavProdutos() {
+        return btnNavProdutos;
+    }
+
+    public JButton getBtnNavClientes() {
+        return btnNavClientes;
+    }
+
+    public JButton getBtnNavServicos() {
+        return btnNavServicos;
     }
 }
