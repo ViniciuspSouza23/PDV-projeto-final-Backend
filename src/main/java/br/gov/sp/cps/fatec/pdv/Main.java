@@ -233,6 +233,16 @@ public class Main {
                         "Areia Sanitária Pipicat Floral para Gatos 4kg", "16.90", 40);
             }
 
+            // Garante que produtos com estoque zerado em testes didáticos sejam reabastecidos
+            for (Produto p : produtoRepo.listarTodos()) {
+                if (p.getQuantidadeEstoque() <= 0) {
+                    p.setQuantidadeEstoque(30);
+                    try {
+                        produtoRepo.atualizar(p);
+                    } catch (Exception ignored) {}
+                }
+            }
+
             // 2. Serviços de Pet Shop
             if (servicoRepo.listarTodos().isEmpty()) {
                 System.out.println("[PetPDV] Populando serviços de demonstração...");

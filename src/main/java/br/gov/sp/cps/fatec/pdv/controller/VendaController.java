@@ -138,6 +138,14 @@ public class VendaController implements ProdutoObserver, ClienteObserver, Servic
             return;
         }
 
+        if (produto.getQuantidadeEstoque() <= 0) {
+            JOptionPane.showMessageDialog(mainFrame,
+                    "O produto '" + produto.getNome() + "' está ESGOTADO (0 unidades disponíveis no estoque).\n"
+                            + "Reabasteça o estoque na aba '📦 Produtos (Estoque)'.",
+                    "Produto Sem Estoque", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
         int quantidade = vendaView.getQuantidadeProduto();
         // Verifica se a quantidade total no carrinho excede o estoque
         int jaNoCarrinho = vendaView.getItensCarrinho().stream()
@@ -303,6 +311,7 @@ public class VendaController implements ProdutoObserver, ClienteObserver, Servic
                         Thread.currentThread().interrupt();
                         mostrarErro("A finalização da venda foi interrompida.", ex);
                     } catch (ExecutionException ex) {
+                        carregarDados();
                         mostrarErro("Não foi possível finalizar a venda.", ex.getCause());
                     } finally {
                         vendaView.setBusy(false);

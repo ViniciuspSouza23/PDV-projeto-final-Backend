@@ -246,7 +246,14 @@ public class VendaView extends JPanel {
                                                           boolean isSelected, boolean cellHasFocus) {
                 super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
                 if (value instanceof Produto p) {
-                    setText(p.getNome() + " | Estq: " + p.getQuantidadeEstoque() + " | " + MOEDA.format(p.getPreco()));
+                    if (p.getQuantidadeEstoque() <= 0) {
+                        setText(p.getNome() + " [ESGOTADO / SEM ESTOQUE] | " + MOEDA.format(p.getPreco()));
+                        if (!isSelected) {
+                            setForeground(new Color(190, 40, 40));
+                        }
+                    } else {
+                        setText(p.getNome() + " | Estq: " + p.getQuantidadeEstoque() + " | " + MOEDA.format(p.getPreco()));
+                    }
                 }
                 return this;
             }
@@ -313,6 +320,18 @@ public class VendaView extends JPanel {
     }
 
     public void adicionarItemNoCarrinho(ItemVenda item) {
+        if (item.getTipoItem() == TipoItemVenda.PRODUTO) {
+            for (ItemVenda existente : itensCarrinho) {
+                if (existente.getTipoItem() == TipoItemVenda.PRODUTO
+                        && existente.getProdutoId() != null
+                        && existente.getProdutoId().equals(item.getProdutoId())) {
+                    existente.setQuantidade(existente.getQuantidade() + item.getQuantidade());
+                    existente.setSubtotal(existente.getPrecoUnitario().multiply(BigDecimal.valueOf(existente.getQuantidade())));
+                    atualizarTabelaCarrinho();
+                    return;
+                }
+            }
+        }
         itensCarrinho.add(item);
         atualizarTabelaCarrinho();
     }

@@ -74,22 +74,32 @@ public class VendaRepositoryImpl implements VendaRepository {
                     .sorted(Comparator.comparing(ItemVenda::getProdutoId))
                     .toList();
 
+            // Valida e decrementa estoque agrupando por produto
+            Map<Long, Integer> qtdPorProduto = new TreeMap<>();
             for (ItemVenda itemProduto : produtosItens) {
-                Produto produto = em.find(Produto.class, itemProduto.getProdutoId(), LockModeType.PESSIMISTIC_WRITE);
+                qtdPorProduto.merge(itemProduto.getProdutoId(), itemProduto.getQuantidade(), Integer::sum);
+            }
+
+            for (Map.Entry<Long, Integer> entry : qtdPorProduto.entrySet()) {
+                Produto produto = em.find(Produto.class, entry.getKey(), LockModeType.PESSIMISTIC_WRITE);
                 if (produto == null) {
-                    throw new IllegalArgumentException("Produto não encontrado: " + itemProduto.getProdutoId());
+                    throw new IllegalArgumentException("Produto não encontrado: " + entry.getKey());
                 }
 
-                int quantidade = itemProduto.getQuantidade();
-                if (produto.getQuantidadeEstoque() < quantidade) {
+                int totalSolicitado = entry.getValue();
+                if (produto.getQuantidadeEstoque() < totalSolicitado) {
                     throw new IllegalArgumentException("Estoque insuficiente para '" + produto.getNome()
-                            + "'. Disponível: " + produto.getQuantidadeEstoque() + ".");
+                            + "'. Solicitado: " + totalSolicitado + ", Disponível: " + produto.getQuantidadeEstoque() + ".");
                 }
 
-                produto.setQuantidadeEstoque(produto.getQuantidadeEstoque() - quantidade);
+                produto.setQuantidadeEstoque(produto.getQuantidadeEstoque() - totalSolicitado);
+            }
 
+            for (ItemVenda itemProduto : produtosItens) {
+                Produto produto = em.find(Produto.class, itemProduto.getProdutoId());
                 // Cria entidade gerenciada nova e transiente para a persistência
-                ItemVenda novoItem = ItemVenda.criarItemProduto(produto.getId(), produto.getNome(), produto.getPreco(), quantidade);
+                ItemVenda novoItem = ItemVenda.criarItemProduto(produto.getId(),
+                        produto.getNome(), produto.getPreco(), itemProduto.getQuantidade());
                 venda.adicionarItem(novoItem);
             }
 
