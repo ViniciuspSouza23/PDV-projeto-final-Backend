@@ -47,6 +47,7 @@ public class ProdutoListView extends JPanel {
     private final JButton btnEditar;
     private final JButton btnExcluir;
     private final JButton btnRecarregar;
+    private final JButton btnAbrirVenda;
 
     public ProdutoListView() {
         setLayout(new BorderLayout(15, 15));
@@ -112,10 +113,14 @@ public class ProdutoListView extends JPanel {
         btnNovo.setPreferredSize(new Dimension(150, 35));
         btnNovo.setFont(new Font("Segoe UI", Font.BOLD, 12));
 
+        btnAbrirVenda = new JButton("Nova venda");
+        btnAbrirVenda.setPreferredSize(new Dimension(120, 35));
+
         painelBotoes.add(btnRecarregar);
         painelBotoes.add(btnExcluir);
         painelBotoes.add(btnEditar);
         painelBotoes.add(btnNovo);
+        painelBotoes.add(btnAbrirVenda);
 
         painelRodape.add(painelBotoes, BorderLayout.EAST);
         add(painelRodape, BorderLayout.SOUTH);
@@ -173,5 +178,9 @@ public class ProdutoListView extends JPanel {
 
     public JButton getBtnRecarregar() {
         return btnRecarregar;
+    }
+
+    public JButton getBtnAbrirVenda() {
+        return btnAbrirVenda;
     }
 }

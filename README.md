@@ -12,7 +12,7 @@
 
 ## 1. Identificação e Contextualização do Plano de Aula
 
-Este projeto materializa a condução de uma aula teórico-prática de **50 minutos**, integrando a camada de apresentação desktop em **Java Swing** a um mecanismo robusto de persistência relacional com **JPA 3.1 / Hibernate 6** e banco embutido **H2 Database**. O desenvolvimento baseia-se em padrões consagrados de engenharia de software (**MVC, Observer, Repository e Inversão de Controle**), garantindo separação rigorosa de responsabilidades, reatividade de interface gráfica e segurança da informação.
+Este projeto materializa uma aula teórico-prática de **50 minutos** e implementa um PDV desktop em **Java Swing**, com persistência relacional por **JPA 3.1 / Hibernate 6** e banco embutido **H2 Database**. Inclui cadastro de produtos e fluxo de vendas com histórico, formas de pagamento, identificação opcional do cliente e baixa transacional de estoque. A arquitetura demonstra **MVC, Observer, Repository e Inversão de Controle**.
 
 ### 1.1. Pré-Requisitos Curriculares
 Para acompanhar esta aula, considera-se que os estudantes dominam competências consolidadas em semestres anteriores e em tópicos inaugurais desta disciplina:
@@ -48,7 +48,8 @@ Ao término desta aula de 50 minutos, os discentes deverão atingir os seguintes
    - **Observer (GoF):** `ActionListener` (captura na GUI) e `ProdutoObserver` / `fireTableDataChanged` (sincronização reativa de tela).
    - **Repository:** Abstração da coleção de entidades em memória e isolamento das operações de banco de dados.
 4. **Camada ORM (JPA/Hibernate) & Banco Embutido:** Mapeamento declarativo de entidades (`@Entity`, `@Table`, `@Id`), controle transacional atômico (`commit`/`rollback`) e execução segura de transações sobre o H2 Database.
-5. **Estudo de Caso Norteador:** Apresentação arquitetural e de código do módulo de Cadastro e Gestão de Produtos (Módulo PDV).
+5. **Fluxo de Venda:** Composição do carrinho, cálculo de total, registro de forma de pagamento e cliente opcional, histórico da venda e atualização transacional do estoque.
+6. **Estudo de Caso Norteador:** Apresentação arquitetural e de código dos módulos de Produtos e Vendas do PDV.
 
 ---
 
@@ -72,25 +73,33 @@ graph TD
         MF["MainFrame (CardLayout)"]
         LV["ProdutoListView (JTable)"]
         FV["ProdutoFormView (Formulário)"]
+        VV["VendaView (Checkout e histórico)"]
         TM["ProdutoTableModel (AbstractTableModel)"]
         MF --> LV
         MF --> FV
+        MF --> VV
         LV --> TM
     end
 
     subgraph Controller_Layer ["Camada de Controle (Controller / Mediator)"]
         PC["ProdutoController"]
+        VC["VendaController"]
     end
 
     subgraph Model_Layer ["Camada de Modelo (Model / Domain / Service)"]
         PS["ProdutoService (Subject / Business Rules)"]
         PO["&lt;&lt;interface&gt;&gt;<br/>ProdutoObserver"]
         PE["Produto (JPA Entity)"]
+        VS["VendaService"]
+        VE["Venda (JPA Entity)"]
+        IVE["ItemVenda (snapshot do produto)"]
     end
 
     subgraph Persistence_Layer ["Camada de Persistência (Repository / ORM)"]
         PR["&lt;&lt;interface&gt;&gt;<br/>ProdutoRepository"]
         PRI["ProdutoRepositoryImpl"]
+        VR["VendaRepository"]
+        VRI["VendaRepositoryImpl"]
         JU["JPAUtil (EntityManagerFactory)"]
         H2[("H2 Database (Embutido / Arquivo)")]
     end
@@ -98,6 +107,8 @@ graph TD
     %% Relações e Fluxos
     LV -- "Eventos (Clicks)" --> PC
     FV -- "Eventos (Clicks)" --> PC
+    LV -- "Abrir checkout" --> VC
+    VV -- "Eventos de venda" --> VC
     PC -- "Manipula Navegação" --> MF
     PC -- "Chama Operações" --> PS
     PS -- "Validações &amp; Notificações" --> PR
@@ -108,6 +119,13 @@ graph TD
     PO -. "Atualiza Dados" .-> TM
     PRI --> JU
     PRI --> PE
+    VC --> VS
+    VS --> VR
+    VRI -. "Implementa" .-> VR
+    VRI --> VE
+    VE --> IVE
+    VRI --> PE
+    VRI --> JU
     JU --> H2
 ```
 
@@ -154,7 +172,44 @@ sequenceDiagram
 
 ---
 
-### 5.3. Diagrama de Classes: Padrões Repository & Observer
+### 5.3. Diagrama de Sequência: Fluxo "Finalizar Venda"
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Operador
+    participant View as VendaView
+    participant Controller as VendaController
+    participant Service as VendaService
+    participant Repository as VendaRepositoryImpl
+    participant JPA as EntityManager / H2
+
+    Operador->>View: Seleciona produtos, quantidades e pagamento
+    Operador->>View: Finaliza venda
+    View->>Controller: Dispara evento
+    Controller->>Controller: Captura dados e inicia SwingWorker
+    Controller->>Service: finalizarVenda(cliente, pagamento, itens)
+    Service->>Service: Valida forma de pagamento e quantidades
+    Service->>Repository: finalizar(venda, itens)
+    Repository->>JPA: begin transaction
+    loop Cada produto em ordem de ID
+        Repository->>JPA: Busca produto com bloqueio pessimista
+        Repository->>JPA: Valida e baixa estoque
+        Repository->>Repository: Cria item com nome/preço históricos
+    end
+    Repository->>JPA: Persiste venda e itens, calcula total
+    Repository->>JPA: commit
+    JPA-->>Controller: Venda persistida
+    Controller->>View: Atualiza histórico e confirma total na EDT
+    alt Estoque insuficiente ou falha
+        Repository->>JPA: rollback
+        Controller->>View: Exibe erro sem concluir venda
+    end
+```
+
+---
+
+### 5.4. Diagrama de Classes: Padrões Repository & Observer
 
 ```mermaid
 classDiagram
@@ -217,12 +272,55 @@ classDiagram
         +onProdutosChanged(List~Produto~ produtos) void
     }
 
+    class Venda {
+        -Long id
+        -LocalDateTime dataHora
+        -String clienteNome
+        -FormaPagamento formaPagamento
+        -BigDecimal total
+        -List~ItemVenda~ itens
+    }
+
+    class ItemVenda {
+        -Long produtoId
+        -String produtoNome
+        -BigDecimal precoUnitario
+        -Integer quantidade
+        -BigDecimal subtotal
+    }
+
+    class VendaService {
+        +finalizarVenda(cliente, pagamento, itens) Venda
+        +listarTodas() List~Venda~
+    }
+
+    class VendaController {
+        +finalizarVenda() void
+        +mostrarDetalhesVenda() void
+    }
+
+    class VendaRepository {
+        <<interface>>
+        +finalizar(Venda, Map) Venda
+        +listarTodas() List~Venda~
+    }
+
+    class VendaRepositoryImpl {
+        +finalizar(Venda, Map) Venda
+        +listarTodas() List~Venda~
+    }
+
     ProdutoRepository <|.. ProdutoRepositoryImpl : implementa
     ProdutoObserver <|.. ProdutoController : implementa
     ProdutoService o--> ProdutoObserver : notifica (1..*)
     ProdutoService --> ProdutoRepository : utiliza (DIP)
     ProdutoController --> ProdutoService : orquestra
     ProdutoRepositoryImpl --> Produto : gerencia
+    VendaService --> VendaRepository : utiliza
+    VendaController --> VendaService : orquestra
+    VendaRepository <|.. VendaRepositoryImpl : implementa
+    VendaRepositoryImpl --> Produto : bloqueia e atualiza estoque
+    Venda --> ItemVenda : contém (1..*)
 ```
 
 ---
@@ -251,23 +349,31 @@ exemplo_persistencia_JavaSwing/
 │   │   ├── java/br/gov/sp/cps/fatec/pdv/
 │   │   │   ├── Main.java                        # Ponto de entrada (Bootstrap, Pure DI e Look&Feel)
 │   │   │   ├── controller/
-│   │   │   │   └── ProdutoController.java       # Orquestrador MVC e ouvinte Observer
+│   │   │   │   ├── ProdutoController.java       # Orquestrador MVC e ouvinte Observer
+│   │   │   │   └── VendaController.java         # Checkout e histórico de vendas
 │   │   │   ├── model/
 │   │   │   │   ├── entity/
-│   │   │   │   │   └── Produto.java             # Entidade JPA mapeada para tabela 'produtos'
+│   │   │   │   │   ├── Produto.java             # Entidade JPA mapeada para tabela 'produtos'
+│   │   │   │   │   ├── Venda.java               # Cabeçalho e informações da venda
+│   │   │   │   │   ├── ItemVenda.java           # Snapshot do produto vendido
+│   │   │   │   │   └── FormaPagamento.java      # Forma de pagamento escolhida
 │   │   │   │   ├── observer/
 │   │   │   │   │   └── ProdutoObserver.java     # Interface funcional do padrão Observer
 │   │   │   │   ├── repository/
 │   │   │   │   │   ├── ProdutoRepository.java   # Abstração de persistência (Interface)
-│   │   │   │   │   └── ProdutoRepositoryImpl.java # Implementação com JPA / EntityManager
+│   │   │   │   │   ├── ProdutoRepositoryImpl.java # Implementação com JPA / EntityManager
+│   │   │   │   │   ├── VendaRepository.java     # Contrato para vendas e histórico
+│   │   │   │   │   └── VendaRepositoryImpl.java # Checkout transacional e estoque
 │   │   │   │   └── service/
-│   │   │   │       └── ProdutoService.java      # Regras de negócio, unicidade e Subject Observer
+│   │   │   │       ├── ProdutoService.java      # Regras de negócio, unicidade e Subject Observer
+│   │   │   │       └── VendaService.java        # Validações do checkout
 │   │   │   ├── util/
 │   │   │   │   └── JPAUtil.java                 # Gerenciador Singleton do EntityManagerFactory
 │   │   │   └── view/
 │   │   │       ├── MainFrame.java               # Janela com CardLayout para alternância de telas
 │   │   │       ├── ProdutoFormView.java         # Formulário de cadastro/edição com GridBagLayout
 │   │   │       ├── ProdutoListView.java         # Tabela de dados com JTable e ações CRUD
+│   │   │       ├── VendaView.java               # Carrinho, checkout e histórico
 │   │   │       └── tablemodel/
 │   │   │           └── ProdutoTableModel.java   # Modelo de tabela reativo (AbstractTableModel)
 │   │   └── resources/
@@ -277,7 +383,8 @@ exemplo_persistencia_JavaSwing/
 │       ├── model/repository/
 │       │   └── ProdutoRepositoryTest.java       # Teste de persistência e operações CRUD
 │       └── model/service/
-│           └── ProdutoServiceTest.java          # Teste de validações de negócio e Observer
+│           ├── ProdutoServiceTest.java          # Teste de validações de negócio e Observer
+│           └── VendaServiceTest.java            # Checkout, baixa de estoque e rollback
 ├── pom.xml                                      # Descritor do Maven e dependências
 ├── mvnw / mvnw.cmd                              # Scripts executáveis do Maven Wrapper
 └── README.md                                    # Plano de aula e documentação técnica integrada
@@ -298,19 +405,21 @@ No terminal, posicionado na raiz do projeto:
 #### No Windows (PowerShell / CMD):
 ```powershell
 # Executar a aplicação diretamente pelo Maven Wrapper:
-.\mvnw.cmd compile exec:java -Dexec.mainClass="br.gov.sp.cps.fatec.pdv.Main"
+.\mvnw.cmd compile exec:java
 ```
 
 #### No Linux / macOS (Bash / Zsh):
 ```bash
-./mvnw compile exec:java -Dexec.mainClass="br.gov.sp.cps.fatec.pdv.Main"
+./mvnw compile exec:java
 ```
+
+O nome da classe principal já está configurado no `pom.xml`.
 
 ---
 
 ### 8.2. Compilação, Testes e Geração do Pacote JAR (Produção)
 
-Para executar a suíte completa de testes automatizados e empacotar o projeto em um arquivo JAR executável autossuficiente:
+Para executar a suíte completa de testes automatizados e empacotar o projeto:
 
 ```powershell
 # Limpar, testar e empacotar:
@@ -353,13 +462,16 @@ Este cronograma detalha a articulação didática entre exposição teórica, in
 Para consolidar as competências da disciplina, os estudantes utilizarão o repositório Git do projeto demonstrado (**PDV Core**) como matriz arquitetural inicial.
 
 ### 10.1. O Desafio Prático
-Em equipes, os estudantes deverão estender a base do projeto para conceber e implementar um sistema completo de PDV aplicado a um **nicho de mercado** à escolha do grupo (ex.: farmácia, livraria, autopeças, pet shop).
+O projeto já contém cadastro de produtos, checkout e histórico de vendas. Em equipes, os estudantes podem adaptar o sistema a um **nicho de mercado** (ex.: farmácia, livraria, autopeças, pet shop) e aprofundar os módulos existentes.
 
-### 10.2. Requisitos de Expansão
-1. **Modelagem e Mapeamento ORM:** Criação de novas entidades e relacionamentos mapeados com JPA (ex.: `Cliente`, `Venda`, `ItemVenda`).
-2. **Interface Gráfica Desacoplada:** Implementação das respectivas telas e tabelas Swing respeitando a separação MVC e a sincronização reativa com o padrão Observer.
-3. **Regras de Negócio e Transações:** Tratamento de transações atômicas de vendas com validação de estoque e controle de exceções na camada Repository.
-4. **Engenharia e Colaboração:** Utilização rigorosa de versionamento colaborativo com Gitflow e commits semânticos.
+### 10.2. Funcionalidades Implementadas e Próximas Expansões
+1. **Produtos:** CRUD, validação de preço e estoque, e unicidade do código de barras.
+2. **Vendas:** Carrinho, cliente identificado opcionalmente por nome, formas de pagamento, histórico e itens que preservam nome e preço no momento da compra.
+3. **Integridade:** Baixa de estoque e gravação da venda/itens na mesma transação; bloqueio dos produtos durante a validação para evitar venda concorrente acima do estoque.
+4. **Interface:** Checkout e consulta de histórico Swing; carregamento de dados e finalização da venda em segundo plano.
+5. **Possíveis evoluções:** Cadastro completo de clientes, cancelamento/estorno, descontos, emissão fiscal, integração com provedores de pagamento, relatórios e autenticação.
+
+As formas de pagamento são registradas na venda, mas não há processamento por adquirente nem emissão de documentos fiscais.
 
 ### 10.3. Critérios de Avaliação (Rubrica de Desempenho)
 - **Aderência Arquitetural (MVC):** Rigor na separação de responsabilidades (a View não acessa o banco; o Controller apenas orquestra; a persistência é isolada no Repository).

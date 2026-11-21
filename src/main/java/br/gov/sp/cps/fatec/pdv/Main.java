@@ -1,10 +1,14 @@
 package br.gov.sp.cps.fatec.pdv;
 
 import br.gov.sp.cps.fatec.pdv.controller.ProdutoController;
+import br.gov.sp.cps.fatec.pdv.controller.VendaController;
 import br.gov.sp.cps.fatec.pdv.model.entity.Produto;
 import br.gov.sp.cps.fatec.pdv.model.repository.ProdutoRepository;
 import br.gov.sp.cps.fatec.pdv.model.repository.ProdutoRepositoryImpl;
+import br.gov.sp.cps.fatec.pdv.model.repository.VendaRepository;
+import br.gov.sp.cps.fatec.pdv.model.repository.VendaRepositoryImpl;
 import br.gov.sp.cps.fatec.pdv.model.service.ProdutoService;
+import br.gov.sp.cps.fatec.pdv.model.service.VendaService;
 import br.gov.sp.cps.fatec.pdv.util.JPAUtil;
 import br.gov.sp.cps.fatec.pdv.view.MainFrame;
 import com.formdev.flatlaf.FlatLightLaf;
@@ -76,6 +80,9 @@ public class Main {
                 // Instanciação do Controlador conectando View e Model (MVC)
                 ProdutoController controller = new ProdutoController(mainFrame, service);
                 controller.inicializar();
+                VendaRepository vendaRepository = new VendaRepositoryImpl();
+                VendaService vendaService = new VendaService(vendaRepository);
+                new VendaController(mainFrame, service, vendaService);
 
                 // Gerenciamento de encerramento de conexões
                 mainFrame.addWindowListener(new WindowAdapter() {
