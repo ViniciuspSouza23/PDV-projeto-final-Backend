@@ -5,16 +5,19 @@
                                  https://jakarta.ee/xml/ns/persistence/persistence_3_0.xsd"
              version="3.0">
 
-    <!-- Unidade de Persistência Principal da Aplicação PDV -->
+    <!-- Unidade de Persistência Principal da Aplicação PDV (Pet Shop) -->
     <persistence-unit name="pdv-pu" transaction-type="RESOURCE_LOCAL">
-        <description>Unidade de Persistência Didática para PDV usando H2 Database e Hibernate 6</description>
+        <description>Unidade de Persistência Didática para PDV Pet Shop usando H2 Database e Hibernate 6</description>
         
         <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
         
-        <!-- Mapeamento da Entidade de Domínio -->
+        <!-- Mapeamento das Entidades de Domínio -->
         <class>br.gov.sp.cps.fatec.pdv.model.entity.Produto</class>
         <class>br.gov.sp.cps.fatec.pdv.model.entity.Venda</class>
         <class>br.gov.sp.cps.fatec.pdv.model.entity.ItemVenda</class>
+        <class>br.gov.sp.cps.fatec.pdv.model.entity.Cliente</class>
+        <class>br.gov.sp.cps.fatec.pdv.model.entity.Pet</class>
+        <class>br.gov.sp.cps.fatec.pdv.model.entity.Servico</class>
 
         <properties>
             <!-- Configurações de Conexão JDBC (H2 Database embutido baseado em arquivo local) -->
@@ -46,6 +49,9 @@
         <class>br.gov.sp.cps.fatec.pdv.model.entity.Produto</class>
         <class>br.gov.sp.cps.fatec.pdv.model.entity.Venda</class>
         <class>br.gov.sp.cps.fatec.pdv.model.entity.ItemVenda</class>
+        <class>br.gov.sp.cps.fatec.pdv.model.entity.Cliente</class>
+        <class>br.gov.sp.cps.fatec.pdv.model.entity.Pet</class>
+        <class>br.gov.sp.cps.fatec.pdv.model.entity.Servico</class>
         <properties>
             <property name="jakarta.persistence.jdbc.driver" value="org.h2.Driver"/>
             <property name="jakarta.persistence.jdbc.url" value="jdbc:h2:mem:pdv_test_db;DB_CLOSE_DELAY=-1"/>

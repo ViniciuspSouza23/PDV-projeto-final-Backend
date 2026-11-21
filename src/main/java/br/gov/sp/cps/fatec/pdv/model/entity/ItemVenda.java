@@ -2,6 +2,8 @@ package br.gov.sp.cps.fatec.pdv.model.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -24,10 +26,23 @@ public class ItemVenda {
     @JoinColumn(name = "venda_id", nullable = false)
     private Venda venda;
 
-    @Column(name = "produto_id", nullable = false)
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tipo_item", nullable = false, length = 20)
+    private TipoItemVenda tipoItem = TipoItemVenda.PRODUTO;
+
+    @Column(name = "produto_id", nullable = true)
     private Long produtoId;
 
-    @Column(name = "produto_nome", nullable = false, length = 120)
+    @Column(name = "servico_id", nullable = true)
+    private Long servicoId;
+
+    @Column(name = "pet_id", nullable = true)
+    private Long petId;
+
+    @Column(name = "pet_nome", length = 80)
+    private String petNome;
+
+    @Column(name = "produto_nome", nullable = false, length = 150)
     private String produtoNome;
 
     @Column(name = "preco_unitario", nullable = false, precision = 12, scale = 2)
@@ -43,8 +58,37 @@ public class ItemVenda {
     }
 
     public ItemVenda(Long produtoId, Integer quantidade) {
+        this.tipoItem = TipoItemVenda.PRODUTO;
         this.produtoId = produtoId;
         this.quantidade = quantidade;
+    }
+
+    public static ItemVenda criarItemProduto(Long produtoId, String nome, BigDecimal precoUnitario, int quantidade) {
+        ItemVenda item = new ItemVenda();
+        item.setTipoItem(TipoItemVenda.PRODUTO);
+        item.setProdutoId(produtoId);
+        item.setProdutoNome(nome);
+        item.setPrecoUnitario(precoUnitario);
+        item.setQuantidade(quantidade);
+        item.setSubtotal(precoUnitario.multiply(BigDecimal.valueOf(quantidade)));
+        return item;
+    }
+
+    public static ItemVenda criarItemServico(Long servicoId, String nomeServico, Long petId, String petNome,
+                                             BigDecimal precoCalculado, int quantidade) {
+        ItemVenda item = new ItemVenda();
+        item.setTipoItem(TipoItemVenda.SERVICO);
+        item.setServicoId(servicoId);
+        item.setPetId(petId);
+        item.setPetNome(petNome);
+        String descricao = petNome != null && !petNome.isBlank()
+                ? nomeServico + " [Pet: " + petNome + "]"
+                : nomeServico;
+        item.setProdutoNome(descricao);
+        item.setPrecoUnitario(precoCalculado);
+        item.setQuantidade(quantidade);
+        item.setSubtotal(precoCalculado.multiply(BigDecimal.valueOf(quantidade)));
+        return item;
     }
 
     public Long getId() {
@@ -55,39 +99,79 @@ public class ItemVenda {
         return venda;
     }
 
+    public TipoItemVenda getTipoItem() {
+        return tipoItem;
+    }
+
+    public void setTipoItem(TipoItemVenda tipoItem) {
+        this.tipoItem = tipoItem;
+    }
+
     public Long getProdutoId() {
         return produtoId;
+    }
+
+    public void setProdutoId(Long produtoId) {
+        this.produtoId = produtoId;
+    }
+
+    public Long getServicoId() {
+        return servicoId;
+    }
+
+    public void setServicoId(Long servicoId) {
+        this.servicoId = servicoId;
+    }
+
+    public Long getPetId() {
+        return petId;
+    }
+
+    public void setPetId(Long petId) {
+        this.petId = petId;
+    }
+
+    public String getPetNome() {
+        return petNome;
+    }
+
+    public void setPetNome(String petNome) {
+        this.petNome = petNome;
     }
 
     public String getProdutoNome() {
         return produtoNome;
     }
 
-    public BigDecimal getPrecoUnitario() {
-        return precoUnitario;
-    }
-
-    public Integer getQuantidade() {
-        return quantidade;
-    }
-
-    public BigDecimal getSubtotal() {
-        return subtotal;
-    }
-
-    public void setVenda(Venda venda) {
-        this.venda = venda;
-    }
-
     public void setProdutoNome(String produtoNome) {
         this.produtoNome = produtoNome;
+    }
+
+    public BigDecimal getPrecoUnitario() {
+        return precoUnitario;
     }
 
     public void setPrecoUnitario(BigDecimal precoUnitario) {
         this.precoUnitario = precoUnitario;
     }
 
+    public Integer getQuantidade() {
+        return quantidade;
+    }
+
+    public void setQuantidade(Integer quantidade) {
+        this.quantidade = quantidade;
+    }
+
+    public BigDecimal getSubtotal() {
+        return subtotal;
+    }
+
     public void setSubtotal(BigDecimal subtotal) {
         this.subtotal = subtotal;
+    }
+
+    public void setVenda(Venda venda) {
+        this.venda = venda;
     }
 }

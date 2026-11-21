@@ -1,6 +1,6 @@
 ![senai_logo](./logo_unisenai.png)
 
-# PDV-Swing-JPA: Persistência de Dados com Frameworks de Interface Gráfica
+# PetPDV-Swing-JPA: Sistema de Ponto de Venda para Pet Shop & Clínica Veterinária
 
 > **Plano de Aula & Projeto Didático de Referência para Ensino Superior**  
 > **Docente:** Prof. Cainã Antunes Silva  
@@ -12,7 +12,7 @@
 
 ## 1. Identificação e Contextualização do Plano de Aula
 
-Este projeto materializa uma aula teórico-prática de **50 minutos** e implementa um PDV desktop em **Java Swing**, com persistência relacional por **JPA 3.1 / Hibernate 6** e banco embutido **H2 Database**. Inclui cadastro de produtos e fluxo de vendas com histórico, formas de pagamento, identificação opcional do cliente e baixa transacional de estoque. A arquitetura demonstra **MVC, Observer, Repository e Inversão de Controle**.
+Este projeto materializa uma aplicação desktop completa de **Pet Shop & Clínica Veterinária (PetPDV)** em **Java Swing**, com persistência relacional por **JPA 3.1 / Hibernate 6** e banco embutido **H2 Database**. Inclui venda híbrida de produtos (com controle e baixa atômica de estoque) e serviços (banho, tosa e consultas associadas ao pet), gestão de tutores (clientes) e animais de estimação, formas de pagamento, histórico e precificação dinâmica. A arquitetura demonstra **MVC, Observer, Repository, Strategy (GoF) e Inversão de Controle**.
 
 ### 1.1. Pré-Requisitos Curriculares
 Para acompanhar esta aula, considera-se que os estudantes dominam competências consolidadas em semestres anteriores e em tópicos inaugurais desta disciplina:
@@ -349,42 +349,68 @@ exemplo_persistencia_JavaSwing/
 │   │   ├── java/br/gov/sp/cps/fatec/pdv/
 │   │   │   ├── Main.java                        # Ponto de entrada (Bootstrap, Pure DI e Look&Feel)
 │   │   │   ├── controller/
-│   │   │   │   ├── ProdutoController.java       # Orquestrador MVC e ouvinte Observer
-│   │   │   │   └── VendaController.java         # Checkout e histórico de vendas
+│   │   │   │   ├── ProdutoController.java       # Orquestrador do catálogo de produtos
+│   │   │   │   ├── VendaController.java         # Checkout híbrido e histórico de vendas
+│   │   │   │   ├── ClienteController.java       # Gestão de tutores e animais de estimação
+│   │   │   │   └── ServicoController.java       # Manutenção do catálogo de serviços
 │   │   │   ├── model/
 │   │   │   │   ├── entity/
-│   │   │   │   │   ├── Produto.java             # Entidade JPA mapeada para tabela 'produtos'
-│   │   │   │   │   ├── Venda.java               # Cabeçalho e informações da venda
-│   │   │   │   │   ├── ItemVenda.java           # Snapshot do produto vendido
-│   │   │   │   │   └── FormaPagamento.java      # Forma de pagamento escolhida
+│   │   │   │   │   ├── Produto.java             # Entidade JPA (tabela 'produtos')
+│   │   │   │   │   ├── Venda.java               # Entidade JPA da venda e vínculo com cliente
+│   │   │   │   │   ├── ItemVenda.java           # Item da venda (produto ou serviço + pet)
+│   │   │   │   │   ├── FormaPagamento.java      # Enum de pagamento
+│   │   │   │   │   ├── Cliente.java             # Tutor com coleção 1:N de pets
+│   │   │   │   │   ├── Pet.java                 # Animal vinculado ao tutor com porte e espécie
+│   │   │   │   │   ├── Servico.java             # Banho, tosa, consultas e regra de porte
+│   │   │   │   │   ├── Especie.java             # Enum (Cachorro, Gato, Ave, Roedor, Outro)
+│   │   │   │   │   ├── Porte.java               # Enum com multiplicador de porte (P, M, G, GG)
+│   │   │   │   │   └── TipoItemVenda.java       # Enum (PRODUTO, SERVICO)
 │   │   │   │   ├── observer/
-│   │   │   │   │   └── ProdutoObserver.java     # Interface funcional do padrão Observer
+│   │   │   │   │   ├── ProdutoObserver.java     # Ouvinte de alterações em produtos
+│   │   │   │   │   ├── ClienteObserver.java     # Ouvinte de alterações em tutores e pets
+│   │   │   │   │   └── ServicoObserver.java     # Ouvinte de alterações em serviços
 │   │   │   │   ├── repository/
-│   │   │   │   │   ├── ProdutoRepository.java   # Abstração de persistência (Interface)
-│   │   │   │   │   ├── ProdutoRepositoryImpl.java # Implementação com JPA / EntityManager
-│   │   │   │   │   ├── VendaRepository.java     # Contrato para vendas e histórico
-│   │   │   │   │   └── VendaRepositoryImpl.java # Checkout transacional e estoque
-│   │   │   │   └── service/
-│   │   │   │       ├── ProdutoService.java      # Regras de negócio, unicidade e Subject Observer
-│   │   │   │       └── VendaService.java        # Validações do checkout
+│   │   │   │   │   ├── ProdutoRepository.java   # Contrato de persistência de produtos
+│   │   │   │   │   ├── ProdutoRepositoryImpl.java
+│   │   │   │   │   ├── VendaRepository.java     # Vendas e histórico
+│   │   │   │   │   ├── VendaRepositoryImpl.java # Checkout híbrido e baixa de estoque
+│   │   │   │   │   ├── ClienteRepository.java   # Tutores
+│   │   │   │   │   ├── ClienteRepositoryImpl.java
+│   │   │   │   │   ├── PetRepository.java       # Pets
+│   │   │   │   │   ├── PetRepositoryImpl.java
+│   │   │   │   │   ├── ServicoRepository.java   # Serviços
+│   │   │   │   │   └── ServicoRepositoryImpl.java
+│   │   │   │   ├── service/
+│   │   │   │   │   ├── ProdutoService.java      # Regras de negócio de produtos
+│   │   │   │   │   ├── VendaService.java        # Validações de venda híbrida
+│   │   │   │   │   ├── ClienteService.java      # Validação de CPF e gestão de pets
+│   │   │   │   │   └── ServicoService.java      # Regras de serviços e cálculo de preço
+│   │   │   │   └── strategy/
+│   │   │   │       ├── CalculadoraPrecoServico.java      # Interface GoF Strategy
+│   │   │   │       └── CalculadoraPorPorteStrategy.java  # Cálculo dinâmico por porte do pet
 │   │   │   ├── util/
 │   │   │   │   └── JPAUtil.java                 # Gerenciador Singleton do EntityManagerFactory
 │   │   │   └── view/
-│   │   │       ├── MainFrame.java               # Janela com CardLayout para alternância de telas
-│   │   │       ├── ProdutoFormView.java         # Formulário de cadastro/edição com GridBagLayout
-│   │   │       ├── ProdutoListView.java         # Tabela de dados com JTable e ações CRUD
-│   │   │       ├── VendaView.java               # Carrinho, checkout e histórico
+│   │   │       ├── MainFrame.java               # Janela com navegação e CardLayout
+│   │   │       ├── ProdutoFormView.java         # Formulário de cadastro de produtos
+│   │   │       ├── ProdutoListView.java         # Catálogo de produtos
+│   │   │       ├── VendaView.java               # Caixa com produtos, serviços, tutor e pet
+│   │   │       ├── ClientePetView.java          # Visão de gestão de tutores e pets
+│   │   │       ├── ServicoListView.java         # Catálogo visual de serviços
 │   │   │       └── tablemodel/
-│   │   │           └── ProdutoTableModel.java   # Modelo de tabela reativo (AbstractTableModel)
+│   │   │           └── ProdutoTableModel.java   # Modelo de tabela reativo
 │   │   └── resources/
 │   │       └── META-INF/
-│   │           └── persistence.xml              # Configuração JPA para banco H2 e testes
+│   │           └── persistence.xml              # Configuração JPA para H2
 │   └── test/java/br/gov/sp/cps/fatec/pdv/
 │       ├── model/repository/
-│       │   └── ProdutoRepositoryTest.java       # Teste de persistência e operações CRUD
-│       └── model/service/
-│           ├── ProdutoServiceTest.java          # Teste de validações de negócio e Observer
-│           └── VendaServiceTest.java            # Checkout, baixa de estoque e rollback
+│       │   └── ProdutoRepositoryTest.java       # Teste de persistência CRUD
+│       ├── model/service/
+│       │   ├── ProdutoServiceTest.java          # Regras de produtos e Observer
+│       │   ├── ClienteServiceTest.java          # Regras de tutores e pets
+│       │   └── VendaServiceTest.java            # Venda mista, baixa de estoque e rollback
+│       └── model/strategy/
+│           └── CalculadoraPorPorteStrategyTest.java # Teste unitário da Strategy por porte
 ├── pom.xml                                      # Descritor do Maven e dependências
 ├── mvnw / mvnw.cmd                              # Scripts executáveis do Maven Wrapper
 └── README.md                                    # Plano de aula e documentação técnica integrada

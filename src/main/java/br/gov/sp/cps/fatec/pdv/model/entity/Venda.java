@@ -9,6 +9,8 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.NamedQuery;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
@@ -31,6 +33,10 @@ public class Venda {
 
     @Column(name = "data_hora", nullable = false)
     private LocalDateTime dataHora;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cliente_id", nullable = true)
+    private Cliente cliente;
 
     @Column(name = "cliente_nome", length = 120)
     private String clienteNome;
@@ -55,6 +61,13 @@ public class Venda {
         this.formaPagamento = formaPagamento;
     }
 
+    public Venda(Cliente cliente, FormaPagamento formaPagamento) {
+        this.dataHora = LocalDateTime.now();
+        this.cliente = cliente;
+        this.clienteNome = cliente != null ? cliente.getNome() : null;
+        this.formaPagamento = formaPagamento;
+    }
+
     public void adicionarItem(ItemVenda item) {
         item.setVenda(this);
         itens.add(item);
@@ -72,6 +85,17 @@ public class Venda {
 
     public LocalDateTime getDataHora() {
         return dataHora;
+    }
+
+    public Cliente getCliente() {
+        return cliente;
+    }
+
+    public void setCliente(Cliente cliente) {
+        this.cliente = cliente;
+        if (cliente != null) {
+            this.clienteNome = cliente.getNome();
+        }
     }
 
     public String getClienteNome() {
