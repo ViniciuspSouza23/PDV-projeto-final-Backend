@@ -99,22 +99,27 @@ public class ProdutoListView extends JPanel {
 
         JPanel painelBotoes = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 5));
 
-        btnRecarregar = new JButton("Recarregar");
-        btnRecarregar.setPreferredSize(new Dimension(110, 35));
+        btnRecarregar = new JButton("🔄 Recarregar");
+        btnRecarregar.setPreferredSize(new Dimension(120, 36));
 
         btnExcluir = new JButton("Excluir");
-        btnExcluir.setPreferredSize(new Dimension(110, 35));
-        btnExcluir.setForeground(new Color(180, 40, 40));
+        btnExcluir.setPreferredSize(new Dimension(100, 36));
+        btnExcluir.setForeground(new Color(220, 38, 38));
 
         btnEditar = new JButton("Editar");
-        btnEditar.setPreferredSize(new Dimension(110, 35));
+        btnEditar.setPreferredSize(new Dimension(100, 36));
 
         btnNovo = new JButton("+ Novo Produto");
-        btnNovo.setPreferredSize(new Dimension(150, 35));
+        btnNovo.setPreferredSize(new Dimension(150, 36));
         btnNovo.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        btnNovo.setBackground(new Color(37, 99, 235));
+        btnNovo.setForeground(Color.WHITE);
 
-        btnAbrirVenda = new JButton("Nova venda");
-        btnAbrirVenda.setPreferredSize(new Dimension(120, 35));
+        btnAbrirVenda = new JButton("🛒 Ir para o Caixa");
+        btnAbrirVenda.setPreferredSize(new Dimension(150, 36));
+        btnAbrirVenda.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        btnAbrirVenda.setBackground(new Color(22, 163, 74));
+        btnAbrirVenda.setForeground(Color.WHITE);
 
         painelBotoes.add(btnRecarregar);
         painelBotoes.add(btnExcluir);

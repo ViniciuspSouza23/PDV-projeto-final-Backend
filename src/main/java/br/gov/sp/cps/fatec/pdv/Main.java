@@ -137,6 +137,24 @@ public class Main {
     private static void configurarLookAndFeel() {
         try {
             FlatLightLaf.setup();
+            UIManager.put("Button.arc", 12);
+            UIManager.put("Component.arc", 10);
+            UIManager.put("ProgressBar.arc", 10);
+            UIManager.put("TextComponent.arc", 10);
+            UIManager.put("ScrollBar.thumbArc", 999);
+            UIManager.put("ScrollBar.thumbInsets", new java.awt.Insets(2, 2, 2, 2));
+            UIManager.put("Table.rowHeight", 30);
+            UIManager.put("Table.showHorizontalLines", true);
+            UIManager.put("Table.showVerticalLines", false);
+            UIManager.put("Table.intercellSpacing", new Dimension(0, 1));
+            UIManager.put("Table.selectionBackground", new Color(224, 231, 255));
+            UIManager.put("Table.selectionForeground", new Color(30, 41, 59));
+            UIManager.put("TableHeader.font", new Font("Segoe UI", Font.BOLD, 12));
+            UIManager.put("TableHeader.height", 32);
+            UIManager.put("TabbedPane.tabHeight", 36);
+            UIManager.put("TabbedPane.selectedBackground", Color.WHITE);
+            UIManager.put("TabbedPane.underlineColor", new Color(37, 99, 235));
+            UIManager.put("TabbedPane.showTabSeparators", true);
         } catch (Throwable t) {
             try {
                 for (UIManager.LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {

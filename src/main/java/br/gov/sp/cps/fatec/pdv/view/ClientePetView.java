@@ -93,6 +93,9 @@ public class ClientePetView extends JPanel {
         botoesTutores.add(btnExcluirCliente);
         botoesTutores.add(btnEditarCliente);
         btnNovoCliente.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        btnNovoCliente.setBackground(new Color(37, 99, 235));
+        btnNovoCliente.setForeground(Color.WHITE);
+        btnNovoCliente.setPreferredSize(new Dimension(140, 35));
         botoesTutores.add(btnNovoCliente);
         painelTutores.add(botoesTutores, BorderLayout.SOUTH);
 
@@ -100,14 +103,17 @@ public class ClientePetView extends JPanel {
         JPanel painelPets = new JPanel(new BorderLayout(8, 8));
         painelPets.setBorder(BorderFactory.createTitledBorder(" 2. Pets do Tutor Selecionado "));
         tabelaPets.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        tabelaPets.setRowHeight(26);
+        tabelaPets.setRowHeight(28);
         tabelaPets.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
         painelPets.add(new JScrollPane(tabelaPets), BorderLayout.CENTER);
 
         JPanel botoesPets = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 4));
-        btnExcluirPet.setForeground(new Color(180, 40, 40));
+        btnExcluirPet.setForeground(new Color(220, 38, 38));
         botoesPets.add(btnExcluirPet);
         btnAdicionarPet.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        btnAdicionarPet.setBackground(new Color(22, 163, 74));
+        btnAdicionarPet.setForeground(Color.WHITE);
+        btnAdicionarPet.setPreferredSize(new Dimension(140, 35));
         botoesPets.add(btnAdicionarPet);
         painelPets.add(botoesPets, BorderLayout.SOUTH);
 

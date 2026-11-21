@@ -70,10 +70,12 @@ public class ServicoListView extends JPanel {
         JPanel rodape = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 4));
         btnRecarregar.setPreferredSize(new Dimension(110, 35));
         btnExcluir.setPreferredSize(new Dimension(110, 35));
-        btnExcluir.setForeground(new Color(180, 40, 40));
+        btnExcluir.setForeground(new Color(220, 38, 38));
         btnEditar.setPreferredSize(new Dimension(110, 35));
         btnNovo.setPreferredSize(new Dimension(150, 35));
         btnNovo.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        btnNovo.setBackground(new Color(37, 99, 235));
+        btnNovo.setForeground(Color.WHITE);
 
         rodape.add(btnRecarregar);
         rodape.add(btnExcluir);
