@@ -27,7 +27,7 @@ public class ItemVenda {
     private Venda venda;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "tipo_item", nullable = false, length = 20)
+    @Column(name = "tipo_item", length = 20)
     private TipoItemVenda tipoItem = TipoItemVenda.PRODUTO;
 
     @Column(name = "produto_id", nullable = true)
@@ -100,7 +100,7 @@ public class ItemVenda {
     }
 
     public TipoItemVenda getTipoItem() {
-        return tipoItem;
+        return tipoItem != null ? tipoItem : TipoItemVenda.PRODUTO;
     }
 
     public void setTipoItem(TipoItemVenda tipoItem) {

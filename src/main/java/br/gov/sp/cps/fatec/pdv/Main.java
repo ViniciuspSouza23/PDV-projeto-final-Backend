@@ -33,6 +33,10 @@ import javax.swing.UIManager;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.math.BigDecimal;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.Statement;
+import java.util.List;
 
 /**
  * Ponto de Entrada Principal (Bootstrap) da Aplicação Desktop PetPDV.
@@ -45,6 +49,9 @@ public class Main {
 
         SwingUtilities.invokeLater(() -> {
             try {
+                // Migra de forma segura a estrutura do banco H2 caso venha de versões anteriores
+                migrarEstruturaBancoSeNecessario();
+
                 // Instanciação da camada de persistência (JPA / Hibernate / H2)
                 ProdutoRepository produtoRepository = new ProdutoRepositoryImpl();
                 ClienteRepository clienteRepository = new ClienteRepositoryImpl();
@@ -52,7 +59,7 @@ public class Main {
                 ServicoRepository servicoRepository = new ServicoRepositoryImpl();
                 VendaRepository vendaRepository = new VendaRepositoryImpl();
 
-                // Carga inicial didática se o banco estiver vazio
+                // Carga inicial didática de produtos para cães, serviços e tutores
                 inicializarDadosDemonstracao(produtoRepository, servicoRepository, clienteRepository, petRepository);
 
                 // Instanciação da camada de serviço de negócio
@@ -95,6 +102,24 @@ public class Main {
         });
     }
 
+    private static void migrarEstruturaBancoSeNecessario() {
+        try {
+            Class.forName("org.h2.Driver");
+            try (Connection conn = DriverManager.getConnection("jdbc:h2:./data/pdv_db;DB_CLOSE_DELAY=-1;AUTO_SERVER=TRUE", "sa", "");
+                 Statement stmt = conn.createStatement()) {
+                stmt.execute("CREATE TABLE IF NOT EXISTS itens_venda (id BIGINT AUTO_INCREMENT PRIMARY KEY)");
+                stmt.execute("ALTER TABLE itens_venda ADD COLUMN IF NOT EXISTS tipo_item VARCHAR(20) DEFAULT 'PRODUTO'");
+                stmt.execute("ALTER TABLE itens_venda ADD COLUMN IF NOT EXISTS servico_id BIGINT");
+                stmt.execute("ALTER TABLE itens_venda ADD COLUMN IF NOT EXISTS pet_id BIGINT");
+                stmt.execute("ALTER TABLE itens_venda ADD COLUMN IF NOT EXISTS pet_nome VARCHAR(80)");
+                stmt.execute("ALTER TABLE itens_venda ALTER COLUMN produto_id DROP NOT NULL");
+                stmt.execute("ALTER TABLE vendas ADD COLUMN IF NOT EXISTS cliente_id BIGINT");
+            }
+        } catch (Exception ignored) {
+            // Se o banco ainda não existe, o Hibernate cria do zero normalmente
+        }
+    }
+
     private static void configurarLookAndFeel() {
         try {
             FlatLightLaf.setup();
@@ -118,19 +143,80 @@ public class Main {
                                                      ClienteRepository clienteRepo,
                                                      PetRepository petRepo) {
         try {
-            // 1. Produtos de Pet Shop
-            if (produtoRepo.listarTodos().isEmpty()) {
-                System.out.println("[PetPDV] Populando produtos de demonstração...");
-                produtoRepo.salvar(new Produto("7891000100011", "Ração Golden Formula Cães Adultos Frango 15kg",
-                        new BigDecimal("169.90"), 25));
-                produtoRepo.salvar(new Produto("7891000200022", "Ração Royal Canin Gatos Castrados 7.5kg",
-                        new BigDecimal("219.00"), 18));
-                produtoRepo.salvar(new Produto("7891000300033", "Antipulgas e Carrapatos Simparic 10 a 20kg",
-                        new BigDecimal("109.90"), 40));
-                produtoRepo.salvar(new Produto("7891000400044", "Shampoo Pet Neutro Brilho e Maciez 500ml",
-                        new BigDecimal("34.50"), 30));
-                produtoRepo.salvar(new Produto("7891000500055", "Brinquedo Mordedor Osso Nylon Resistente",
-                        new BigDecimal("29.90"), 50));
+            List<Produto> existentes = produtoRepo.listarTodos();
+
+            // Remove itens de supermercado da versão anterior caso existam
+            boolean temItensMercado = existentes.stream().anyMatch(p ->
+                    p.getNome().toLowerCase().contains("café") ||
+                    p.getNome().toLowerCase().contains("açúcar") ||
+                    p.getNome().toLowerCase().contains("arroz") ||
+                    p.getNome().toLowerCase().contains("feijão") ||
+                    p.getNome().toLowerCase().contains("azeite"));
+
+            if (temItensMercado) {
+                System.out.println("[PetPDV] Removendo itens legados de supermercado...");
+                for (Produto p : existentes) {
+                    String n = p.getNome().toLowerCase();
+                    if (n.contains("café") || n.contains("açúcar") || n.contains("arroz") || n.contains("feijão") || n.contains("azeite")) {
+                        try {
+                            produtoRepo.excluir(p.getId());
+                        } catch (Exception ignored) {}
+                    }
+                }
+                existentes = produtoRepo.listarTodos();
+            }
+
+            // 1. Produtos de Cachorro e Pet Shop
+            if (existentes.isEmpty() || existentes.size() < 10) {
+                System.out.println("[PetPDV] Populando catálogo de produtos para cães e pets...");
+
+                // Rações para Cães
+                salvarProdutoSeInexistente(produtoRepo, "7891000100011",
+                        "Ração PremieR Formula Cães Adultos Frango 15kg", "189.90", 25);
+                salvarProdutoSeInexistente(produtoRepo, "7891000100012",
+                        "Ração Golden Formula Cães Filhotes Frango e Arroz 15kg", "164.90", 30);
+                salvarProdutoSeInexistente(produtoRepo, "7891000100013",
+                        "Ração Royal Canin Mini Adult Cães Pequeno Porte 7.5kg", "229.00", 20);
+                salvarProdutoSeInexistente(produtoRepo, "7891000100014",
+                        "Ração Hills Science Diet Cães Adultos Frango 12kg", "289.90", 15);
+
+                // Petiscos e Mastigáveis para Cães
+                salvarProdutoSeInexistente(produtoRepo, "7891000200021",
+                        "Petisco Bifinho Keldog Carne e Cereais para Cães 500g", "22.50", 50);
+                salvarProdutoSeInexistente(produtoRepo, "7891000200022",
+                        "Biscoito Pedigree Biscrok Cães Adultos Multi 1kg", "28.90", 40);
+                salvarProdutoSeInexistente(produtoRepo, "7891000200023",
+                        "Osso Mastigável Defumado Dental Anti-Tártaro para Cães", "14.90", 60);
+
+                // Farmácia & Higiene Canina
+                salvarProdutoSeInexistente(produtoRepo, "7891000300031",
+                        "Antipulgas e Carrapatos Simparic 10 a 20kg (3 comprimidos)", "115.00", 35);
+                salvarProdutoSeInexistente(produtoRepo, "7891000300032",
+                        "Antipulgas e Carrapatos Bravecto Cães 4.5 a 10kg (1 comp)", "219.00", 20);
+                salvarProdutoSeInexistente(produtoRepo, "7891000300033",
+                        "Shampoo Sanol Dog Antipulgas e Carrapatos 500ml", "28.50", 45);
+                salvarProdutoSeInexistente(produtoRepo, "7891000300034",
+                        "Vermífugo Canino Chemital Plus Cães 4 comprimidos", "39.90", 30);
+                salvarProdutoSeInexistente(produtoRepo, "7891000300035",
+                        "Tapete Higiênico Chalesco Ultra Absorvente 30 unidades", "69.90", 25);
+
+                // Acessórios e Brinquedos para Cães
+                salvarProdutoSeInexistente(produtoRepo, "7891000400041",
+                        "Guia Retrátil para Cães até 25kg com Trava 5m", "54.90", 22);
+                salvarProdutoSeInexistente(produtoRepo, "7891000400042",
+                        "Peitoral Antipuxão Ajustável com Guia Reforçada", "49.90", 18);
+                salvarProdutoSeInexistente(produtoRepo, "7891000400043",
+                        "Brinquedo Mordedor Osso Nylon Resistente para Cães", "29.90", 50);
+                salvarProdutoSeInexistente(produtoRepo, "7891000400044",
+                        "Bolinha Maciça com Cravo Borracha Mordedora 65mm", "18.50", 40);
+                salvarProdutoSeInexistente(produtoRepo, "7891000400045",
+                        "Cama Pet Almofadada Conforto Lavável Tam G para Cães", "129.90", 12);
+
+                // Itens para Gatos
+                salvarProdutoSeInexistente(produtoRepo, "7891000500051",
+                        "Ração Royal Canin Gatos Castrados 7.5kg", "219.00", 18);
+                salvarProdutoSeInexistente(produtoRepo, "7891000500052",
+                        "Areia Sanitária Pipicat Floral para Gatos 4kg", "16.90", 40);
             }
 
             // 2. Serviços de Pet Shop
@@ -167,6 +253,12 @@ public class Main {
             }
         } catch (Exception e) {
             System.err.println("[PetPDV] Aviso ao popular demonstração: " + e.getMessage());
+        }
+    }
+
+    private static void salvarProdutoSeInexistente(ProdutoRepository repo, String codBarras, String nome, String preco, int estoque) {
+        if (repo.buscarPorCodigoBarras(codBarras).isEmpty()) {
+            repo.salvar(new Produto(codBarras, nome, new BigDecimal(preco), estoque));
         }
     }
 }
