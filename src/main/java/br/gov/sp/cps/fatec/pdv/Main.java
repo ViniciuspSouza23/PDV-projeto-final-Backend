@@ -30,6 +30,10 @@ import com.formdev.flatlaf.FlatLightLaf;
 
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.Insets;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.math.BigDecimal;
