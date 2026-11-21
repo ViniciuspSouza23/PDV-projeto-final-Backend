@@ -87,10 +87,10 @@ public class VendaRepositoryImpl implements VendaRepository {
                 }
 
                 produto.setQuantidadeEstoque(produto.getQuantidadeEstoque() - quantidade);
-                itemProduto.setProdutoNome(produto.getNome());
-                itemProduto.setPrecoUnitario(produto.getPreco());
-                itemProduto.setSubtotal(produto.getPreco().multiply(BigDecimal.valueOf(quantidade)));
-                venda.adicionarItem(itemProduto);
+
+                // Cria entidade gerenciada nova e transiente para a persistência
+                ItemVenda novoItem = ItemVenda.criarItemProduto(produto.getId(), produto.getNome(), produto.getPreco(), quantidade);
+                venda.adicionarItem(novoItem);
             }
 
             // Itens de Serviço (não baixam estoque físico)
@@ -104,20 +104,21 @@ public class VendaRepositoryImpl implements VendaRepository {
                     throw new IllegalArgumentException("Serviço não encontrado: " + itemServico.getServicoId());
                 }
 
+                String petNome = null;
                 String nomeDescritivo = servico.getNome();
                 if (itemServico.getPetId() != null) {
                     Pet pet = em.find(Pet.class, itemServico.getPetId());
                     if (pet != null) {
-                        itemServico.setPetNome(pet.getNome());
+                        petNome = pet.getNome();
                         nomeDescritivo = servico.getNome() + " [Pet: " + pet.getNome() + " (" + pet.getPorte().getDescricao() + ")]";
                     }
                 }
 
-                itemServico.setProdutoNome(nomeDescritivo);
-                if (itemServico.getSubtotal() == null) {
-                    itemServico.setSubtotal(itemServico.getPrecoUnitario().multiply(BigDecimal.valueOf(itemServico.getQuantidade())));
-                }
-                venda.adicionarItem(itemServico);
+                // Cria entidade gerenciada nova e transiente para a persistência
+                ItemVenda novoItem = ItemVenda.criarItemServico(servico.getId(), servico.getNome(), itemServico.getPetId(),
+                        petNome, itemServico.getPrecoUnitario(), itemServico.getQuantidade());
+                novoItem.setProdutoNome(nomeDescritivo);
+                venda.adicionarItem(novoItem);
             }
 
             venda.calcularTotal();
