@@ -132,11 +132,14 @@ public class VendaController implements ProdutoObserver, ClienteObserver, Servic
     }
 
     private void adicionarProduto() {
-        Produto produto = vendaView.getProdutoSelecionado();
-        if (produto == null) {
+        Produto produtoSelecionado = vendaView.getProdutoSelecionado();
+        if (produtoSelecionado == null) {
             JOptionPane.showMessageDialog(mainFrame, "Nenhum produto selecionado.", "Atenção", JOptionPane.WARNING_MESSAGE);
             return;
         }
+
+        // Consulta estoque em tempo real direto no banco de dados para evitar leituras defasadas
+        Produto produto = produtoService.buscarPorId(produtoSelecionado.getId()).orElse(produtoSelecionado);
 
         if (produto.getQuantidadeEstoque() <= 0) {
             JOptionPane.showMessageDialog(mainFrame,
@@ -155,8 +158,9 @@ public class VendaController implements ProdutoObserver, ClienteObserver, Servic
 
         if (jaNoCarrinho + quantidade > produto.getQuantidadeEstoque()) {
             JOptionPane.showMessageDialog(mainFrame,
-                    "A quantidade total informada (" + (jaNoCarrinho + quantidade) + ") excede o estoque disponível ("
-                            + produto.getQuantidadeEstoque() + ").",
+                    "A quantidade total informada (" + (jaNoCarrinho + quantidade) + ") excede o estoque disponível em tempo real ("
+                            + produto.getQuantidadeEstoque() + ").\n"
+                            + (jaNoCarrinho > 0 ? "Você já possui " + jaNoCarrinho + " unidade(s) deste item no carrinho." : ""),
                     "Estoque Insuficiente", JOptionPane.WARNING_MESSAGE);
             return;
         }
@@ -311,8 +315,41 @@ public class VendaController implements ProdutoObserver, ClienteObserver, Servic
                         Thread.currentThread().interrupt();
                         mostrarErro("A finalização da venda foi interrompida.", ex);
                     } catch (ExecutionException ex) {
-                        carregarDados();
-                        mostrarErro("Não foi possível finalizar a venda.", ex.getCause());
+                        Throwable causa = ex.getCause();
+                        String msgErro = causa != null ? causa.getMessage() : "Erro desconhecido.";
+
+                        if (msgErro != null && msgErro.contains("Estoque insuficiente")) {
+                            carregarDados();
+                            int opcao = JOptionPane.showOptionDialog(mainFrame,
+                                    msgErro + "\n\nO que você deseja fazer para concluir a venda?",
+                                    "Estoque Insuficiente",
+                                    JOptionPane.YES_NO_CANCEL_OPTION,
+                                    JOptionPane.WARNING_MESSAGE,
+                                    null,
+                                    new Object[]{"Reabastecer Estoque (+50 un)", "Limpar Carrinho", "Fechar"},
+                                    "Reabastecer Estoque (+50 un)");
+
+                            if (opcao == 0) {
+                                // Reabastece os produtos do carrinho no banco de dados
+                                for (ItemVenda item : itens) {
+                                    if (item.getTipoItem() == TipoItemVenda.PRODUTO && item.getProdutoId() != null) {
+                                        produtoService.buscarPorId(item.getProdutoId()).ifPresent(prod -> {
+                                            prod.setQuantidadeEstoque(prod.getQuantidadeEstoque() + 50);
+                                            produtoService.atualizar(prod);
+                                        });
+                                    }
+                                }
+                                produtoService.notificarObservadores();
+                                carregarDados();
+                                JOptionPane.showMessageDialog(mainFrame,
+                                        "Estoque dos produtos reabastecido com sucesso (+50 unidades)!\nAgora clique novamente em 'Finalizar Venda' para concluir o registro.",
+                                        "Estoque Reabastecido", JOptionPane.INFORMATION_MESSAGE);
+                            } else if (opcao == 1) {
+                                vendaView.limparCarrinho();
+                            }
+                        } else {
+                            mostrarErro("Não foi possível finalizar a venda.", causa);
+                        }
                     } finally {
                         vendaView.setBusy(false);
                     }
