@@ -243,7 +243,13 @@ public class VendaController implements ProdutoObserver, ClienteObserver, Servic
         }
 
         StringBuilder detalhes = new StringBuilder("Venda #").append(venda.getId()).append("\n\n");
-        String cliente = venda.getCliente() != null ? venda.getCliente().getNome() : venda.getClienteNome();
+        String cliente = venda.getClienteNome();
+        if (cliente == null || cliente.isBlank()) {
+            try {
+                cliente = venda.getCliente() != null ? venda.getCliente().getNome() : null;
+            } catch (Exception ignored) {
+            }
+        }
         detalhes.append("Tutor/Cliente: ").append(cliente != null ? cliente : "Consumidor não identificado").append("\n");
         detalhes.append("Pagamento: ").append(venda.getFormaPagamento()).append("\n\nItens:\n");
 
@@ -348,9 +354,9 @@ public class VendaController implements ProdutoObserver, ClienteObserver, Servic
                 protected void done() {
                     try {
                         ResultadoVendaHibrida resultado = get();
+                        vendaView.limparCarrinho();
                         vendaView.setProdutos(resultado.produtos());
                         vendaView.setHistorico(resultado.vendas());
-                        vendaView.limparCarrinho();
                         JOptionPane.showMessageDialog(mainFrame,
                                 "Venda #" + resultado.venda().getId() + " finalizada com sucesso!\nTotal: "
                                         + MOEDA.format(resultado.venda().getTotal()),
@@ -394,6 +400,8 @@ public class VendaController implements ProdutoObserver, ClienteObserver, Servic
                         } else {
                             mostrarErro("Não foi possível finalizar a venda.", causa);
                         }
+                    } catch (Exception ex) {
+                        mostrarErro("Erro ao atualizar interface após a venda.", ex);
                     } finally {
                         vendaView.setBusy(false);
                     }

@@ -385,8 +385,16 @@ public class VendaView extends JPanel {
         vendasExibidas = (vendas != null) ? List.copyOf(vendas) : List.of();
         modeloHistorico.setRowCount(0);
         for (Venda v : vendasExibidas) {
-            String tutorNome = v.getCliente() != null ? v.getCliente().getNome() : v.getClienteNome();
-            if (tutorNome == null || tutorNome.isBlank()) tutorNome = "Consumidor não identificado";
+            String tutorNome = v.getClienteNome();
+            if (tutorNome == null || tutorNome.isBlank()) {
+                try {
+                    tutorNome = v.getCliente() != null ? v.getCliente().getNome() : null;
+                } catch (Exception ignored) {
+                }
+            }
+            if (tutorNome == null || tutorNome.isBlank()) {
+                tutorNome = "Consumidor não identificado";
+            }
 
             modeloHistorico.addRow(new Object[]{
                     v.getId(),

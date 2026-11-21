@@ -24,7 +24,7 @@ import java.util.List;
 @Entity
 @Table(name = "vendas")
 @NamedQuery(name = "Venda.listarTodas",
-        query = "SELECT DISTINCT v FROM Venda v LEFT JOIN FETCH v.itens ORDER BY v.dataHora DESC")
+        query = "SELECT DISTINCT v FROM Venda v LEFT JOIN FETCH v.cliente LEFT JOIN FETCH v.itens ORDER BY v.dataHora DESC")
 public class Venda {
 
     @Id
