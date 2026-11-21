@@ -103,8 +103,8 @@ public class VendaView extends JPanel {
         add(titulo, BorderLayout.NORTH);
 
         JTabbedPane abas = new JTabbedPane();
-        abas.addTab("🛒 Nova Venda / Atendimento", criarPainelNovaVenda());
-        abas.addTab("📋 Histórico de Vendas", criarPainelHistorico());
+        abas.addTab("Nova Venda / Atendimento", criarPainelNovaVenda());
+        abas.addTab("Histórico de Vendas", criarPainelHistorico());
         add(abas, BorderLayout.CENTER);
 
         configurarRenderizadores();
@@ -148,52 +148,74 @@ public class VendaView extends JPanel {
         // 2. Abas de Inclusão (Produtos vs Serviços)
         JTabbedPane abasItens = new JTabbedPane();
 
-        // Aba Produtos
-        JPanel painelAddProduto = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 12));
-        painelAddProduto.add(new JLabel("Produto (Estoque):"));
-        cbProduto.setPreferredSize(new Dimension(320, 32));
-        painelAddProduto.add(cbProduto);
-        painelAddProduto.add(new JLabel("Qtd:"));
+        // Aba Produtos com Layout Estruturado em 2 Linhas
+        JPanel painelAddProduto = new JPanel(new GridLayout(2, 1, 6, 8));
+        painelAddProduto.setBorder(BorderFactory.createEmptyBorder(10, 12, 10, 12));
+
+        JPanel linhaProd1 = new JPanel(new BorderLayout(8, 0));
+        linhaProd1.setOpaque(false);
+        JLabel lblProd = new JLabel("Produto (Estoque):");
+        lblProd.setPreferredSize(new Dimension(125, 30));
+        linhaProd1.add(lblProd, BorderLayout.WEST);
+        linhaProd1.add(cbProduto, BorderLayout.CENTER);
+        painelAddProduto.add(linhaProd1);
+
+        JPanel linhaProd2 = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        linhaProd2.setOpaque(false);
+        linhaProd2.add(new JLabel("Qtd:"));
         spQtdProduto.setPreferredSize(new Dimension(65, 32));
-        painelAddProduto.add(spQtdProduto);
+        linhaProd2.add(spQtdProduto);
 
         btnAdicionarProduto.setFont(new Font("Segoe UI", Font.BOLD, 12));
         btnAdicionarProduto.setPreferredSize(new Dimension(175, 34));
         btnAdicionarProduto.setBackground(new Color(37, 99, 235));
         btnAdicionarProduto.setForeground(Color.WHITE);
-        painelAddProduto.add(btnAdicionarProduto);
+        linhaProd2.add(btnAdicionarProduto);
 
         btnRecarregarEstoque.setPreferredSize(new Dimension(120, 34));
-        painelAddProduto.add(btnRecarregarEstoque);
-        abasItens.addTab("📦 Produtos (Rações, Remédios, Brinquedos)", painelAddProduto);
+        btnRecarregarEstoque.setText("Recarregar");
+        linhaProd2.add(btnRecarregarEstoque);
+        painelAddProduto.add(linhaProd2);
 
-        // Aba Serviços
-        JPanel painelAddServico = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 12));
-        painelAddServico.add(new JLabel("Serviço:"));
-        cbServico.setPreferredSize(new Dimension(280, 32));
-        painelAddServico.add(cbServico);
+        abasItens.addTab("Produtos (Rações, Remédios, Brinquedos)", painelAddProduto);
 
+        // Aba Serviços com Layout Estruturado em 2 Linhas
+        JPanel painelAddServico = new JPanel(new GridLayout(2, 1, 6, 8));
+        painelAddServico.setBorder(BorderFactory.createEmptyBorder(10, 12, 10, 12));
+
+        JPanel linhaServ1 = new JPanel(new BorderLayout(8, 0));
+        linhaServ1.setOpaque(false);
+        JLabel lblServ = new JLabel("Serviço:");
+        lblServ.setPreferredSize(new Dimension(55, 30));
+        linhaServ1.add(lblServ, BorderLayout.WEST);
+        linhaServ1.add(cbServico, BorderLayout.CENTER);
         lblPrecoServicoAjustado.setFont(new Font("Segoe UI", Font.BOLD, 13));
         lblPrecoServicoAjustado.setForeground(new Color(22, 101, 52));
-        painelAddServico.add(lblPrecoServicoAjustado);
+        lblPrecoServicoAjustado.setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 0));
+        linhaServ1.add(lblPrecoServicoAjustado, BorderLayout.EAST);
+        painelAddServico.add(linhaServ1);
 
-        painelAddServico.add(new JLabel("Qtd:"));
-        spQtdServico.setPreferredSize(new Dimension(60, 32));
-        painelAddServico.add(spQtdServico);
+        JPanel linhaServ2 = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        linhaServ2.setOpaque(false);
+        linhaServ2.add(new JLabel("Qtd:"));
+        spQtdServico.setPreferredSize(new Dimension(65, 32));
+        linhaServ2.add(spQtdServico);
 
         btnAdicionarServico.setFont(new Font("Segoe UI", Font.BOLD, 12));
         btnAdicionarServico.setPreferredSize(new Dimension(175, 34));
         btnAdicionarServico.setBackground(new Color(5, 150, 105));
         btnAdicionarServico.setForeground(Color.WHITE);
-        painelAddServico.add(btnAdicionarServico);
-        abasItens.addTab("✂️ Serviços (Banho, Tosa, Veterinário)", painelAddServico);
+        linhaServ2.add(btnAdicionarServico);
+        painelAddServico.add(linhaServ2);
+
+        abasItens.addTab("Serviços (Banho, Tosa, Veterinário)", painelAddServico);
 
         painelEsquerdo.add(abasItens, BorderLayout.CENTER);
 
         // PAINEL DIREITO: COMANDA VIRTUAL & CHECKOUT
         JPanel painelDireito = new JPanel(new BorderLayout(8, 8));
         painelDireito.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createTitledBorder(" 🧾 Comanda de Atendimento / Carrinho "),
+                BorderFactory.createTitledBorder(" Comanda de Atendimento / Carrinho "),
                 BorderFactory.createEmptyBorder(4, 8, 8, 8)
         ));
 
@@ -212,42 +234,57 @@ public class VendaView extends JPanel {
         }
         painelDireito.add(new JScrollPane(tabelaCarrinho), BorderLayout.CENTER);
 
-        // Rodapé do Carrinho com Totalizador em Destaque
-        JPanel painelCheckout = new JPanel(new BorderLayout(10, 10));
+        // Rodapé do Carrinho com Totalizador em Destaque e Ações Limpas
+        JPanel painelCheckout = new JPanel(new BorderLayout(8, 8));
         painelCheckout.setBackground(new Color(240, 253, 244));
         painelCheckout.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(new Color(187, 247, 208), 1, true),
-                BorderFactory.createEmptyBorder(12, 16, 12, 16)
+                BorderFactory.createEmptyBorder(10, 14, 10, 14)
         ));
+
+        // Linha 1: Total do Atendimento
+        JPanel linhaTotal = new JPanel(new BorderLayout());
+        linhaTotal.setOpaque(false);
+        JLabel lblTextoTotal = new JLabel("TOTAL DO ATENDIMENTO:");
+        lblTextoTotal.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        lblTextoTotal.setForeground(new Color(22, 101, 52));
+        linhaTotal.add(lblTextoTotal, BorderLayout.WEST);
 
         lblTotal.setFont(new Font("Segoe UI", Font.BOLD, 22));
         lblTotal.setForeground(new Color(21, 128, 61));
-        painelCheckout.add(lblTotal, BorderLayout.WEST);
+        linhaTotal.add(lblTotal, BorderLayout.EAST);
+        painelCheckout.add(linhaTotal, BorderLayout.NORTH);
 
-        JPanel botoesCheckout = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
-        botoesCheckout.setOpaque(false);
+        // Linha 2: 3 Botões de Ação Perfeitamente Distribuídos (sem sobreposição)
+        JPanel linhaBotoes = new JPanel(new GridLayout(1, 3, 8, 0));
+        linhaBotoes.setOpaque(false);
 
         btnLimparCarrinho.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        btnLimparCarrinho.setPreferredSize(new Dimension(200, 38));
-        botoesCheckout.add(btnLimparCarrinho);
+        btnLimparCarrinho.setText("Limpar Carrinho");
+        btnLimparCarrinho.setPreferredSize(new Dimension(0, 38));
 
         btnRemoverItem.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        btnRemoverItem.setText("Remover Item");
         btnRemoverItem.setForeground(new Color(220, 38, 38));
-        btnRemoverItem.setPreferredSize(new Dimension(120, 38));
-        botoesCheckout.add(btnRemoverItem);
+        btnRemoverItem.setPreferredSize(new Dimension(0, 38));
 
         btnFinalizar.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        btnFinalizar.setText("Finalizar Venda");
         btnFinalizar.setBackground(new Color(22, 163, 74));
         btnFinalizar.setForeground(Color.WHITE);
-        btnFinalizar.setPreferredSize(new Dimension(160, 40));
-        botoesCheckout.add(btnFinalizar);
+        btnFinalizar.setPreferredSize(new Dimension(0, 38));
 
-        painelCheckout.add(botoesCheckout, BorderLayout.EAST);
+        linhaBotoes.add(btnLimparCarrinho);
+        linhaBotoes.add(btnRemoverItem);
+        linhaBotoes.add(btnFinalizar);
+        painelCheckout.add(linhaBotoes, BorderLayout.SOUTH);
+
         painelDireito.add(painelCheckout, BorderLayout.SOUTH);
 
         // JSplitPane dividindo Esquerda e Direita de forma responsiva
         javax.swing.JSplitPane split = new javax.swing.JSplitPane(javax.swing.JSplitPane.HORIZONTAL_SPLIT, painelEsquerdo, painelDireito);
         split.setResizeWeight(0.48);
+        split.setDividerLocation(520);
         split.setDividerSize(6);
         split.setBorder(null);
 

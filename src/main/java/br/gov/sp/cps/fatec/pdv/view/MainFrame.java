@@ -53,10 +53,10 @@ public class MainFrame extends JFrame {
         this.clientePetView = new ClientePetView();
         this.servicoListView = new ServicoListView();
 
-        this.btnNavVendas = criarBotaoNav("🛒 Caixa / Vendas", () -> mostrarVenda());
-        this.btnNavProdutos = criarBotaoNav("📦 Produtos (Estoque)", () -> mostrarLista());
-        this.btnNavClientes = criarBotaoNav("🐾 Tutores & Pets", () -> mostrarClientes());
-        this.btnNavServicos = criarBotaoNav("✂️ Serviços (Banho & Tosa)", () -> mostrarServicos());
+        this.btnNavVendas = criarBotaoNav("Caixa / Vendas", () -> mostrarVenda());
+        this.btnNavProdutos = criarBotaoNav("Produtos (Estoque)", () -> mostrarLista());
+        this.btnNavClientes = criarBotaoNav("Tutores & Pets", () -> mostrarClientes());
+        this.btnNavServicos = criarBotaoNav("Serviços (Banho & Tosa)", () -> mostrarServicos());
 
         // Adiciona as telas ao container gerenciado por CardLayout
         this.painelPrincipal.add(vendaView, TELA_VENDA);
@@ -97,8 +97,8 @@ public class MainFrame extends JFrame {
         // Marca / Logo à Esquerda
         JPanel painelMarca = new JPanel(new GridLayout(2, 1, 0, 1));
         painelMarca.setOpaque(false);
-        JLabel lblLogo = new JLabel("🐾 PetPDV Pro");
-        lblLogo.setFont(new Font("Segoe UI", Font.BOLD, 17));
+        JLabel lblLogo = new JLabel("PetPDV Pro");
+        lblLogo.setFont(new Font("Segoe UI", Font.BOLD, 18));
         lblLogo.setForeground(new Color(15, 23, 42));
 
         JLabel lblSub = new JLabel("Pet Shop & Clínica Veterinária");
