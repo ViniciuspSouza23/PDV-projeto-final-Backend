@@ -97,9 +97,13 @@ public class VendaRepositoryImpl implements VendaRepository {
 
             for (ItemVenda itemProduto : produtosItens) {
                 Produto produto = em.find(Produto.class, itemProduto.getProdutoId());
-                // Cria entidade gerenciada nova e transiente para a persistência
+                // Cria entidade gerenciada nova e transiente para a persistência mantendo vínculo com o Pet se houver
                 ItemVenda novoItem = ItemVenda.criarItemProduto(produto.getId(),
-                        produto.getNome(), produto.getPreco(), itemProduto.getQuantidade());
+                        produto.getNome(), itemProduto.getPetId(), itemProduto.getPetNome(),
+                        produto.getPreco(), itemProduto.getQuantidade());
+                if (itemProduto.getProdutoNome() != null && !itemProduto.getProdutoNome().isBlank()) {
+                    novoItem.setProdutoNome(itemProduto.getProdutoNome());
+                }
                 venda.adicionarItem(novoItem);
             }
 

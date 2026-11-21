@@ -56,6 +56,7 @@ public class VendaView extends JPanel {
     private final JComboBox<Produto> cbProduto = new JComboBox<>();
     private final JSpinner spQtdProduto = new JSpinner(new SpinnerNumberModel(1, 1, 10000, 1));
     private final JButton btnAdicionarProduto = new JButton("+ Adicionar Produto");
+    private final JButton btnRecarregarEstoque = new JButton("🔄 Recarregar");
 
     // Seção de Serviços
     private final JComboBox<Servico> cbServico = new JComboBox<>();
@@ -65,7 +66,7 @@ public class VendaView extends JPanel {
 
     // Carrinho
     private final DefaultTableModel modeloCarrinho = new DefaultTableModel(
-            new Object[]{"#", "Tipo", "Item / Descrição", "Qtd", "Unitário", "Subtotal"}, 0) {
+            new Object[]{"#", "Tipo", "Item / Descrição", "Pet Atendido", "Qtd", "Unitário", "Subtotal"}, 0) {
         @Override
         public boolean isCellEditable(int row, int column) {
             return false;
@@ -74,7 +75,7 @@ public class VendaView extends JPanel {
     private final JTable tabelaCarrinho = new JTable(modeloCarrinho);
     private final JLabel lblTotal = new JLabel("Total: R$ 0,00");
     private final JButton btnRemoverItem = new JButton("Remover Item");
-    private final JButton btnLimparCarrinho = new JButton("Limpar");
+    private final JButton btnLimparCarrinho = new JButton("🗑️ Limpar / Novo Atendimento");
     private final JButton btnFinalizar = new JButton("Finalizar Venda");
 
     // Histórico
@@ -146,6 +147,8 @@ public class VendaView extends JPanel {
         painelAddProduto.add(spQtdProduto);
         btnAdicionarProduto.setFont(new Font("Segoe UI", Font.BOLD, 12));
         painelAddProduto.add(btnAdicionarProduto);
+        btnRecarregarEstoque.setToolTipText("Recarrega a lista de produtos e o estoque em tempo real direto do banco");
+        painelAddProduto.add(btnRecarregarEstoque);
         abasItens.addTab("📦 Adicionar Produto (Rações, Remédios, Brinquedos)", painelAddProduto);
 
         JPanel painelAddServico = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 8));
@@ -323,8 +326,8 @@ public class VendaView extends JPanel {
         if (item.getTipoItem() == TipoItemVenda.PRODUTO) {
             for (ItemVenda existente : itensCarrinho) {
                 if (existente.getTipoItem() == TipoItemVenda.PRODUTO
-                        && existente.getProdutoId() != null
-                        && existente.getProdutoId().equals(item.getProdutoId())) {
+                        && java.util.Objects.equals(existente.getProdutoId(), item.getProdutoId())
+                        && java.util.Objects.equals(existente.getPetId(), item.getPetId())) {
                     existente.setQuantidade(existente.getQuantidade() + item.getQuantidade());
                     existente.setSubtotal(existente.getPrecoUnitario().multiply(BigDecimal.valueOf(existente.getQuantidade())));
                     atualizarTabelaCarrinho();
@@ -355,10 +358,21 @@ public class VendaView extends JPanel {
         int idx = 1;
         for (ItemVenda item : itensCarrinho) {
             total = total.add(item.getSubtotal());
+            String petTexto = (item.getPetNome() != null && !item.getPetNome().isBlank())
+                    ? item.getPetNome()
+                    : "Geral / Balcão";
+
+            // Se o nome do item já contém a tag [Pet: ...], removemos para exibir limpo na coluna Descrição
+            String descItem = item.getProdutoNome();
+            if (descItem != null && descItem.contains(" [Pet: ")) {
+                descItem = descItem.substring(0, descItem.indexOf(" [Pet: "));
+            }
+
             modeloCarrinho.addRow(new Object[]{
                     idx++,
                     item.getTipoItem().getDescricao(),
-                    item.getProdutoNome(),
+                    descItem,
+                    petTexto,
                     item.getQuantidade(),
                     MOEDA.format(item.getPrecoUnitario()),
                     MOEDA.format(item.getSubtotal())
@@ -397,6 +411,7 @@ public class VendaView extends JPanel {
         cbProduto.setEnabled(!busy);
         spQtdProduto.setEnabled(!busy);
         btnAdicionarProduto.setEnabled(!busy);
+        btnRecarregarEstoque.setEnabled(!busy);
         cbServico.setEnabled(!busy);
         spQtdServico.setEnabled(!busy);
         btnAdicionarServico.setEnabled(!busy);
@@ -470,6 +485,10 @@ public class VendaView extends JPanel {
 
     public JButton getBtnAdicionarProduto() {
         return btnAdicionarProduto;
+    }
+
+    public JButton getBtnRecarregarEstoque() {
+        return btnRecarregarEstoque;
     }
 
     public JButton getBtnAdicionarServico() {

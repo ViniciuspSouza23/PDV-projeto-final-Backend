@@ -64,10 +64,20 @@ public class ItemVenda {
     }
 
     public static ItemVenda criarItemProduto(Long produtoId, String nome, BigDecimal precoUnitario, int quantidade) {
+        return criarItemProduto(produtoId, nome, null, null, precoUnitario, quantidade);
+    }
+
+    public static ItemVenda criarItemProduto(Long produtoId, String nome, Long petId, String petNome,
+                                             BigDecimal precoUnitario, int quantidade) {
         ItemVenda item = new ItemVenda();
         item.setTipoItem(TipoItemVenda.PRODUTO);
         item.setProdutoId(produtoId);
-        item.setProdutoNome(nome);
+        item.setPetId(petId);
+        item.setPetNome(petNome);
+        String descricao = (petNome != null && !petNome.isBlank())
+                ? nome + " [Pet: " + petNome + "]"
+                : nome;
+        item.setProdutoNome(descricao);
         item.setPrecoUnitario(precoUnitario);
         item.setQuantidade(quantidade);
         item.setSubtotal(precoUnitario.multiply(BigDecimal.valueOf(quantidade)));

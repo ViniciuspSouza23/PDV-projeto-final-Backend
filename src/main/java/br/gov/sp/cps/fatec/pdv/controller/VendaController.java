@@ -69,6 +69,7 @@ public class VendaController implements ProdutoObserver, ClienteObserver, Servic
     private void vincularEventos() {
         mainFrame.getListView().getBtnAbrirVenda().addActionListener(event -> abrirVenda());
         vendaView.getBtnAdicionarProduto().addActionListener(event -> adicionarProduto());
+        vendaView.getBtnRecarregarEstoque().addActionListener(event -> carregarDados());
         vendaView.getBtnAdicionarServico().addActionListener(event -> adicionarServico());
         vendaView.getBtnRemoverItem().addActionListener(event -> vendaView.removerItemSelecionado());
         vendaView.getBtnLimparCarrinho().addActionListener(event -> vendaView.limparCarrinho());
@@ -79,9 +80,9 @@ public class VendaController implements ProdutoObserver, ClienteObserver, Servic
         // Atualização reativa de pets quando muda o tutor
         vendaView.getCbTutor().addActionListener(event -> onTutorMudou());
 
-        // Atualização do preview de preço do serviço
+        // Atualização do preview de preço do serviço e verificação de pet
         vendaView.getCbServico().addActionListener(event -> atualizarPrecoServicoPreview());
-        vendaView.getCbPet().addActionListener(event -> atualizarPrecoServicoPreview());
+        vendaView.getCbPet().addActionListener(event -> onPetMudou());
     }
 
     public void abrirVenda() {
@@ -90,6 +91,19 @@ public class VendaController implements ProdutoObserver, ClienteObserver, Servic
     }
 
     private void onTutorMudou() {
+        if (!vendaView.getItensCarrinho().isEmpty()) {
+            int resposta = JOptionPane.showConfirmDialog(mainFrame,
+                    "Você alterou o tutor e o carrinho possui " + vendaView.getItensCarrinho().size()
+                            + " item(ns) do atendimento anterior.\n\n"
+                            + "Deseja limpar o carrinho para iniciar um novo atendimento para este tutor?",
+                    "Troca de Tutor / Novo Atendimento",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.QUESTION_MESSAGE);
+            if (resposta == JOptionPane.YES_OPTION) {
+                vendaView.limparCarrinho();
+            }
+        }
+
         Cliente tutor = vendaView.getTutorSelecionado();
         if (tutor != null && tutor.getPets() != null && !tutor.getPets().isEmpty()) {
             vendaView.setPetsDoTutor(tutor.getPets());
@@ -107,6 +121,32 @@ public class VendaController implements ProdutoObserver, ClienteObserver, Servic
             vendaView.getTxtClienteAvulso().setEnabled(true);
         }
         atualizarPrecoServicoPreview();
+    }
+
+    private void onPetMudou() {
+        atualizarPrecoServicoPreview();
+        Pet petAtual = vendaView.getPetSelecionado();
+        List<ItemVenda> itens = vendaView.getItensCarrinho();
+        if (petAtual != null && !itens.isEmpty()) {
+            boolean temItensDeOutroPet = itens.stream()
+                    .anyMatch(i -> i.getPetId() != null && !i.getPetId().equals(petAtual.getId()));
+            boolean temItemDestePet = itens.stream()
+                    .anyMatch(i -> i.getPetId() != null && i.getPetId().equals(petAtual.getId()));
+
+            if (temItensDeOutroPet && !temItemDestePet) {
+                int opc = JOptionPane.showConfirmDialog(mainFrame,
+                        "Você selecionou o pet '" + petAtual.getNome() + "', mas o carrinho contém "
+                                + itens.size() + " item(ns) de outro pet.\n\n"
+                                + "Deseja LIMPAR o carrinho para iniciar um atendimento novo para " + petAtual.getNome() + "?\n"
+                                + "(Selecione 'Não' se desejar manter os itens e registrar múltiplos pets juntos)",
+                        "Troca de Pet Atendido",
+                        JOptionPane.YES_NO_OPTION,
+                        JOptionPane.QUESTION_MESSAGE);
+                if (opc == JOptionPane.YES_OPTION) {
+                    vendaView.limparCarrinho();
+                }
+            }
+        }
     }
 
     private void atualizarPrecoServicoPreview() {
@@ -165,7 +205,11 @@ public class VendaController implements ProdutoObserver, ClienteObserver, Servic
             return;
         }
 
-        ItemVenda item = ItemVenda.criarItemProduto(produto.getId(), produto.getNome(), produto.getPreco(), quantidade);
+        Pet pet = vendaView.getPetSelecionado();
+        Long petId = pet != null ? pet.getId() : null;
+        String petNome = pet != null ? pet.getNome() : null;
+
+        ItemVenda item = ItemVenda.criarItemProduto(produto.getId(), produto.getNome(), petId, petNome, produto.getPreco(), quantidade);
         vendaView.adicionarItemNoCarrinho(item);
     }
 
