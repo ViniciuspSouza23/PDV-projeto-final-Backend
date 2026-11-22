@@ -148,20 +148,30 @@ public class VendaView extends JPanel {
         // 2. Abas de Inclusão (Produtos vs Serviços)
         JTabbedPane abasItens = new JTabbedPane();
 
-        // Aba Produtos com Layout Estruturado em 2 Linhas
-        JPanel painelAddProduto = new JPanel(new GridLayout(2, 1, 6, 8));
-        painelAddProduto.setBorder(BorderFactory.createEmptyBorder(10, 12, 10, 12));
+        // --- ABA PRODUTOS ---
+        JPanel tabProdutos = new JPanel(new BorderLayout(10, 10));
+        tabProdutos.setBorder(BorderFactory.createEmptyBorder(12, 14, 12, 14));
 
+        JPanel formProdutos = new JPanel();
+        formProdutos.setLayout(new javax.swing.BoxLayout(formProdutos, javax.swing.BoxLayout.Y_AXIS));
+
+        // Linha 1: Produto (Estoque)
         JPanel linhaProd1 = new JPanel(new BorderLayout(8, 0));
         linhaProd1.setOpaque(false);
+        linhaProd1.setMaximumSize(new Dimension(Short.MAX_VALUE, 34));
         JLabel lblProd = new JLabel("Produto (Estoque):");
-        lblProd.setPreferredSize(new Dimension(125, 30));
+        lblProd.setPreferredSize(new Dimension(130, 32));
         linhaProd1.add(lblProd, BorderLayout.WEST);
+        cbProduto.setPreferredSize(new Dimension(280, 32));
         linhaProd1.add(cbProduto, BorderLayout.CENTER);
-        painelAddProduto.add(linhaProd1);
+        formProdutos.add(linhaProd1);
 
+        formProdutos.add(javax.swing.Box.createVerticalStrut(10));
+
+        // Linha 2: Quantidade, Botão Adicionar e Botão Recarregar
         JPanel linhaProd2 = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
         linhaProd2.setOpaque(false);
+        linhaProd2.setMaximumSize(new Dimension(Short.MAX_VALUE, 36));
         linhaProd2.add(new JLabel("Qtd:"));
         spQtdProduto.setPreferredSize(new Dimension(65, 32));
         linhaProd2.add(spQtdProduto);
@@ -172,33 +182,61 @@ public class VendaView extends JPanel {
         btnAdicionarProduto.setForeground(Color.WHITE);
         linhaProd2.add(btnAdicionarProduto);
 
-        btnRecarregarEstoque.setPreferredSize(new Dimension(120, 34));
+        btnRecarregarEstoque.setPreferredSize(new Dimension(110, 34));
         btnRecarregarEstoque.setText("Recarregar");
         linhaProd2.add(btnRecarregarEstoque);
-        painelAddProduto.add(linhaProd2);
+        formProdutos.add(linhaProd2);
 
-        abasItens.addTab("Produtos (Rações, Remédios, Brinquedos)", painelAddProduto);
+        tabProdutos.add(formProdutos, BorderLayout.NORTH);
 
-        // Aba Serviços com Layout Estruturado em 2 Linhas
-        JPanel painelAddServico = new JPanel(new GridLayout(2, 1, 6, 8));
-        painelAddServico.setBorder(BorderFactory.createEmptyBorder(10, 12, 10, 12));
+        // Card informativo abaixo na aba Produtos
+        JPanel infoProd = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 8));
+        infoProd.setBackground(new Color(248, 250, 252));
+        infoProd.setBorder(BorderFactory.createLineBorder(new Color(226, 232, 240), 1, true));
+        JLabel lblInfoProd = new JLabel("Dica: O estoque e a disponibilidade são validados em tempo real no banco H2.");
+        lblInfoProd.setFont(new Font("Segoe UI", Font.ITALIC, 11));
+        lblInfoProd.setForeground(new Color(100, 116, 139));
+        infoProd.add(lblInfoProd);
+        tabProdutos.add(infoProd, BorderLayout.CENTER);
 
+        abasItens.addTab("Produtos (Rações, Remédios, Brinquedos)", tabProdutos);
+
+        // --- ABA SERVIÇOS ---
+        JPanel tabServicos = new JPanel(new BorderLayout(10, 10));
+        tabServicos.setBorder(BorderFactory.createEmptyBorder(12, 14, 12, 14));
+
+        JPanel formServicos = new JPanel();
+        formServicos.setLayout(new javax.swing.BoxLayout(formServicos, javax.swing.BoxLayout.Y_AXIS));
+
+        // Linha 1: Serviço (ComboBox com largura total e altura padrão de 32px)
         JPanel linhaServ1 = new JPanel(new BorderLayout(8, 0));
         linhaServ1.setOpaque(false);
+        linhaServ1.setMaximumSize(new Dimension(Short.MAX_VALUE, 34));
         JLabel lblServ = new JLabel("Serviço:");
-        lblServ.setPreferredSize(new Dimension(55, 30));
+        lblServ.setPreferredSize(new Dimension(65, 32));
         linhaServ1.add(lblServ, BorderLayout.WEST);
+        cbServico.setPreferredSize(new Dimension(280, 32));
         linhaServ1.add(cbServico, BorderLayout.CENTER);
-        lblPrecoServicoAjustado.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        lblPrecoServicoAjustado.setForeground(new Color(22, 101, 52));
-        lblPrecoServicoAjustado.setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 0));
-        linhaServ1.add(lblPrecoServicoAjustado, BorderLayout.EAST);
-        painelAddServico.add(linhaServ1);
+        formServicos.add(linhaServ1);
 
+        formServicos.add(javax.swing.Box.createVerticalStrut(10));
+
+        // Linha 2: Preço Ajustado em Destaque, Quantidade e Botão Adicionar
         JPanel linhaServ2 = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
         linhaServ2.setOpaque(false);
+        linhaServ2.setMaximumSize(new Dimension(Short.MAX_VALUE, 36));
+
+        // Badge estilizada de Preço Calculado
+        JPanel badgePreco = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 4));
+        badgePreco.setBackground(new Color(240, 253, 244));
+        badgePreco.setBorder(BorderFactory.createLineBorder(new Color(187, 247, 208), 1, true));
+        lblPrecoServicoAjustado.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        lblPrecoServicoAjustado.setForeground(new Color(22, 101, 52));
+        badgePreco.add(lblPrecoServicoAjustado);
+        linhaServ2.add(badgePreco);
+
         linhaServ2.add(new JLabel("Qtd:"));
-        spQtdServico.setPreferredSize(new Dimension(65, 32));
+        spQtdServico.setPreferredSize(new Dimension(60, 32));
         linhaServ2.add(spQtdServico);
 
         btnAdicionarServico.setFont(new Font("Segoe UI", Font.BOLD, 12));
@@ -206,9 +244,21 @@ public class VendaView extends JPanel {
         btnAdicionarServico.setBackground(new Color(5, 150, 105));
         btnAdicionarServico.setForeground(Color.WHITE);
         linhaServ2.add(btnAdicionarServico);
-        painelAddServico.add(linhaServ2);
+        formServicos.add(linhaServ2);
 
-        abasItens.addTab("Serviços (Banho, Tosa, Veterinário)", painelAddServico);
+        tabServicos.add(formServicos, BorderLayout.NORTH);
+
+        // Card informativo abaixo na aba Serviços
+        JPanel infoServ = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 8));
+        infoServ.setBackground(new Color(240, 253, 244));
+        infoServ.setBorder(BorderFactory.createLineBorder(new Color(187, 247, 208), 1, true));
+        JLabel lblInfoServ = new JLabel("Dica: Preços de Banho e Tosa aplicam multiplicador por porte (Pequeno 1.0x, Médio 1.25x, Grande 1.5x, Gigante 1.8x).");
+        lblInfoServ.setFont(new Font("Segoe UI", Font.ITALIC, 11));
+        lblInfoServ.setForeground(new Color(22, 101, 52));
+        infoServ.add(lblInfoServ);
+        tabServicos.add(infoServ, BorderLayout.CENTER);
+
+        abasItens.addTab("Serviços (Banho, Tosa, Veterinário)", tabServicos);
 
         painelEsquerdo.add(abasItens, BorderLayout.CENTER);
 
