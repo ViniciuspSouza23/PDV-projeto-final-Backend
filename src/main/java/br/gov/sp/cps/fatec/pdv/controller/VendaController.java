@@ -19,6 +19,7 @@ import br.gov.sp.cps.fatec.pdv.view.MainFrame;
 import br.gov.sp.cps.fatec.pdv.view.VendaView;
 
 import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 import java.math.BigDecimal;
 import java.text.MessageFormat;
@@ -178,39 +179,48 @@ public class VendaController implements ProdutoObserver, ClienteObserver, Servic
             return;
         }
 
-        // Consulta estoque em tempo real direto no banco de dados para evitar leituras defasadas
-        Produto produto = produtoService.buscarPorId(produtoSelecionado.getId()).orElse(produtoSelecionado);
-
-        if (produto.getQuantidadeEstoque() <= 0) {
-            JOptionPane.showMessageDialog(mainFrame,
-                    "O produto '" + produto.getNome() + "' está ESGOTADO (0 unidades disponíveis no estoque).\n"
-                            + "Reabasteça o estoque na aba '📦 Produtos (Estoque)'.",
-                    "Produto Sem Estoque", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
         int quantidade = vendaView.getQuantidadeProduto();
-        // Verifica se a quantidade total no carrinho excede o estoque
-        int jaNoCarrinho = vendaView.getItensCarrinho().stream()
-                .filter(i -> i.getTipoItem() == TipoItemVenda.PRODUTO && produto.getId().equals(i.getProdutoId()))
-                .mapToInt(ItemVenda::getQuantidade)
-                .sum();
-
-        if (jaNoCarrinho + quantidade > produto.getQuantidadeEstoque()) {
-            JOptionPane.showMessageDialog(mainFrame,
-                    "A quantidade total informada (" + (jaNoCarrinho + quantidade) + ") excede o estoque disponível em tempo real ("
-                            + produto.getQuantidadeEstoque() + ").\n"
-                            + (jaNoCarrinho > 0 ? "Você já possui " + jaNoCarrinho + " unidade(s) deste item no carrinho." : ""),
-                    "Estoque Insuficiente", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
         Pet pet = vendaView.getPetSelecionado();
         Long petId = pet != null ? pet.getId() : null;
         String petNome = pet != null ? pet.getNome() : null;
+        vendaView.getBtnAdicionarProduto().setEnabled(false);
 
-        ItemVenda item = ItemVenda.criarItemProduto(produto.getId(), produto.getNome(), petId, petNome, produto.getPreco(), quantidade);
-        vendaView.adicionarItemNoCarrinho(item);
+        SwingTaskRunner.run(() -> produtoService.buscarPorId(produtoSelecionado.getId())
+                        .orElseThrow(() -> new IllegalArgumentException("O produto selecionado não existe mais.")),
+                produto -> {
+                    try {
+                        if (produto.getQuantidadeEstoque() <= 0) {
+                            JOptionPane.showMessageDialog(mainFrame,
+                                    "O produto '" + produto.getNome()
+                                            + "' está sem estoque. Atualize a quantidade na tela de Produtos.",
+                                    "Produto sem estoque", JOptionPane.WARNING_MESSAGE);
+                            return;
+                        }
+
+                        int jaNoCarrinho = vendaView.getItensCarrinho().stream()
+                                .filter(i -> i.getTipoItem() == TipoItemVenda.PRODUTO
+                                        && produto.getId().equals(i.getProdutoId()))
+                                .mapToInt(ItemVenda::getQuantidade)
+                                .sum();
+                        if (jaNoCarrinho + quantidade > produto.getQuantidadeEstoque()) {
+                            JOptionPane.showMessageDialog(mainFrame,
+                                    "Quantidade total solicitada: " + (jaNoCarrinho + quantidade)
+                                            + ". Disponível: " + produto.getQuantidadeEstoque() + ".",
+                                    "Estoque insuficiente", JOptionPane.WARNING_MESSAGE);
+                            return;
+                        }
+
+                        ItemVenda item = ItemVenda.criarItemProduto(produto.getId(), produto.getNome(),
+                                petId, petNome, produto.getPreco(), quantidade);
+                        vendaView.adicionarItemNoCarrinho(item);
+                    } finally {
+                        vendaView.getBtnAdicionarProduto().setEnabled(true);
+                    }
+                }, error -> {
+                    vendaView.getBtnAdicionarProduto().setEnabled(true);
+                    JOptionPane.showMessageDialog(mainFrame, error.getMessage(),
+                            "Não foi possível adicionar o produto", JOptionPane.ERROR_MESSAGE);
+                });
     }
 
     private void adicionarServico() {
@@ -369,34 +379,10 @@ public class VendaController implements ProdutoObserver, ClienteObserver, Servic
                         String msgErro = causa != null ? causa.getMessage() : "Erro desconhecido.";
 
                         if (msgErro != null && msgErro.contains("Estoque insuficiente")) {
-                            carregarDados();
-                            int opcao = JOptionPane.showOptionDialog(mainFrame,
-                                    msgErro + "\n\nO que você deseja fazer para concluir a venda?",
-                                    "Estoque Insuficiente",
-                                    JOptionPane.YES_NO_CANCEL_OPTION,
-                                    JOptionPane.WARNING_MESSAGE,
-                                    null,
-                                    new Object[]{"Reabastecer Estoque (+50 un)", "Limpar Carrinho", "Fechar"},
-                                    "Reabastecer Estoque (+50 un)");
-
-                            if (opcao == 0) {
-                                // Reabastece os produtos do carrinho no banco de dados
-                                for (ItemVenda item : itens) {
-                                    if (item.getTipoItem() == TipoItemVenda.PRODUTO && item.getProdutoId() != null) {
-                                        produtoService.buscarPorId(item.getProdutoId()).ifPresent(prod -> {
-                                            prod.setQuantidadeEstoque(prod.getQuantidadeEstoque() + 50);
-                                            produtoService.atualizar(prod);
-                                        });
-                                    }
-                                }
-                                produtoService.notificarObservadores();
-                                carregarDados();
-                                JOptionPane.showMessageDialog(mainFrame,
-                                        "Estoque dos produtos reabastecido com sucesso (+50 unidades)!\nAgora clique novamente em 'Finalizar Venda' para concluir o registro.",
-                                        "Estoque Reabastecido", JOptionPane.INFORMATION_MESSAGE);
-                            } else if (opcao == 1) {
-                                vendaView.limparCarrinho();
-                            }
+                            JOptionPane.showMessageDialog(mainFrame,
+                                    msgErro + "\n\nAjuste o estoque no cadastro de produtos e tente novamente.",
+                                    "Estoque insuficiente", JOptionPane.WARNING_MESSAGE);
+                            SwingUtilities.invokeLater(VendaController.this::carregarDados);
                         } else {
                             mostrarErro("Não foi possível finalizar a venda.", causa);
                         }

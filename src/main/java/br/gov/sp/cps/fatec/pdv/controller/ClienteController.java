@@ -33,11 +33,15 @@ public class ClienteController implements ClienteObserver {
 
     public void inicializar() {
         this.service.addObserver(this);
-        this.service.notificarObservadores();
+        recarregar();
     }
 
     public void recarregar() {
-        this.service.notificarObservadores();
+        SwingTaskRunner.run(() -> {
+            service.notificarObservadores();
+            return null;
+        }, ignored -> {
+        }, this::mostrarErroAoCarregar);
     }
 
     private void vincularEventos() {
@@ -46,7 +50,7 @@ public class ClienteController implements ClienteObserver {
         view.getBtnExcluirCliente().addActionListener(e -> onExcluirCliente());
         view.getBtnAdicionarPet().addActionListener(e -> onAdicionarPet());
         view.getBtnExcluirPet().addActionListener(e -> onExcluirPet());
-        view.getBtnRecarregar().addActionListener(e -> service.notificarObservadores());
+        view.getBtnRecarregar().addActionListener(e -> recarregar());
     }
 
     private void onNovoCliente() {
@@ -69,16 +73,10 @@ public class ClienteController implements ClienteObserver {
                 JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 
         if (resultado == JOptionPane.OK_OPTION) {
-            try {
-                Cliente novo = new Cliente(txtNome.getText().trim(), txtCpf.getText().trim(),
-                        txtTelefone.getText().trim(), txtEmail.getText().trim());
-                service.salvar(novo);
-                JOptionPane.showMessageDialog(mainFrame, "Tutor cadastrado com sucesso!", "Sucesso",
-                        JOptionPane.INFORMATION_MESSAGE);
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(mainFrame, ex.getMessage(), "Validação de Tutor",
-                        JOptionPane.WARNING_MESSAGE);
-            }
+            Cliente novo = new Cliente(txtNome.getText().trim(), txtCpf.getText().trim(),
+                    txtTelefone.getText().trim(), txtEmail.getText().trim());
+            executarOperacao(() -> service.salvar(novo), "Tutor cadastrado com sucesso!",
+                    "Não foi possível cadastrar o tutor: ");
         }
     }
 
@@ -109,18 +107,12 @@ public class ClienteController implements ClienteObserver {
                 JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 
         if (resultado == JOptionPane.OK_OPTION) {
-            try {
-                selecionado.setNome(txtNome.getText().trim());
-                selecionado.setCpf(txtCpf.getText().trim());
-                selecionado.setTelefone(txtTelefone.getText().trim());
-                selecionado.setEmail(txtEmail.getText().trim());
-                service.atualizar(selecionado);
-                JOptionPane.showMessageDialog(mainFrame, "Tutor atualizado com sucesso!", "Sucesso",
-                        JOptionPane.INFORMATION_MESSAGE);
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(mainFrame, ex.getMessage(), "Erro ao Atualizar",
-                        JOptionPane.WARNING_MESSAGE);
-            }
+            selecionado.setNome(txtNome.getText().trim());
+            selecionado.setCpf(txtCpf.getText().trim());
+            selecionado.setTelefone(txtTelefone.getText().trim());
+            selecionado.setEmail(txtEmail.getText().trim());
+            executarOperacao(() -> service.atualizar(selecionado), "Tutor atualizado com sucesso!",
+                    "Não foi possível atualizar o tutor: ");
         }
     }
 
@@ -138,14 +130,8 @@ public class ClienteController implements ClienteObserver {
                 "Confirmar Exclusão de Tutor", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
 
         if (resp == JOptionPane.YES_OPTION) {
-            try {
-                service.excluir(selecionado.getId());
-                JOptionPane.showMessageDialog(mainFrame, "Tutor removido com sucesso!", "Sucesso",
-                        JOptionPane.INFORMATION_MESSAGE);
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(mainFrame, "Não foi possível excluir o tutor: " + ex.getMessage(),
-                        "Erro", JOptionPane.ERROR_MESSAGE);
-            }
+            executarOperacao(() -> service.excluir(selecionado.getId()), "Tutor removido com sucesso!",
+                    "Não foi possível excluir o tutor: ");
         }
     }
 
@@ -179,16 +165,10 @@ public class ClienteController implements ClienteObserver {
                 "Adicionar Pet para " + tutor.getNome(), JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 
         if (resultado == JOptionPane.OK_OPTION) {
-            try {
-                Pet novoPet = new Pet(txtNome.getText().trim(), (Especie) cbEspecie.getSelectedItem(),
-                        txtRaca.getText().trim(), (Porte) cbPorte.getSelectedItem(), txtObs.getText().trim());
-                service.adicionarPet(tutor.getId(), novoPet);
-                JOptionPane.showMessageDialog(mainFrame, "Pet adicionado com sucesso!", "Sucesso",
-                        JOptionPane.INFORMATION_MESSAGE);
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(mainFrame, ex.getMessage(), "Validação do Pet",
-                        JOptionPane.WARNING_MESSAGE);
-            }
+            Pet novoPet = new Pet(txtNome.getText().trim(), (Especie) cbEspecie.getSelectedItem(),
+                    txtRaca.getText().trim(), (Porte) cbPorte.getSelectedItem(), txtObs.getText().trim());
+            executarOperacao(() -> service.adicionarPet(tutor.getId(), novoPet), "Pet adicionado com sucesso!",
+                    "Não foi possível adicionar o pet: ");
         }
     }
 
@@ -205,15 +185,27 @@ public class ClienteController implements ClienteObserver {
                 "Confirmar Remoção de Pet", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
 
         if (resp == JOptionPane.YES_OPTION) {
-            try {
-                service.excluirPet(pet.getId());
-                JOptionPane.showMessageDialog(mainFrame, "Pet removido com sucesso!", "Sucesso",
-                        JOptionPane.INFORMATION_MESSAGE);
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(mainFrame, "Erro ao remover pet: " + ex.getMessage(),
-                        "Erro", JOptionPane.ERROR_MESSAGE);
-            }
+            executarOperacao(() -> service.excluirPet(pet.getId()), "Pet removido com sucesso!",
+                    "Erro ao remover pet: ");
         }
+    }
+
+    private void executarOperacao(Runnable operacao, String mensagemSucesso, String mensagemErro) {
+        SwingTaskRunner.run(() -> {
+            operacao.run();
+            return null;
+        }, ignored -> JOptionPane.showMessageDialog(mainFrame, mensagemSucesso, "Sucesso",
+                JOptionPane.INFORMATION_MESSAGE), ex -> {
+            boolean validacao = ex instanceof IllegalArgumentException;
+            JOptionPane.showMessageDialog(mainFrame, mensagemErro + ex.getMessage(),
+                    validacao ? "Validação" : "Erro",
+                    validacao ? JOptionPane.WARNING_MESSAGE : JOptionPane.ERROR_MESSAGE);
+        });
+    }
+
+    private void mostrarErroAoCarregar(Throwable error) {
+        JOptionPane.showMessageDialog(mainFrame, "Não foi possível carregar tutores e pets:\n" + error.getMessage(),
+                "Erro de persistência", JOptionPane.ERROR_MESSAGE);
     }
 
     @Override

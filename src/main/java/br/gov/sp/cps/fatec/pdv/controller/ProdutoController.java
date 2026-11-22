@@ -75,14 +75,18 @@ public class ProdutoController implements ProdutoObserver {
      */
     public void inicializar() {
         this.service.addObserver(this);
-        this.service.notificarObservadores();
+        recarregar();
     }
 
     /**
      * Recarrega os dados de produtos via camada de serviço.
      */
     public void recarregar() {
-        this.service.notificarObservadores();
+        SwingTaskRunner.run(() -> {
+            service.notificarObservadores();
+            return null;
+        }, ignored -> {
+        }, this::mostrarErroDePersistencia);
     }
 
     /**
@@ -120,7 +124,7 @@ public class ProdutoController implements ProdutoObserver {
     }
 
     private void onRecarregarProdutos() {
-        service.notificarObservadores();
+        recarregar();
     }
 
     private void onEditarProduto() {
@@ -158,24 +162,26 @@ public class ProdutoController implements ProdutoObserver {
                 JOptionPane.QUESTION_MESSAGE);
 
         if (confirmacao == JOptionPane.YES_OPTION) {
-            try {
+            SwingTaskRunner.run(() -> {
                 service.excluir(selecionado.getId());
+                return null;
+            }, ignored -> {
                 JOptionPane.showMessageDialog(
                         mainFrame,
                         "Produto excluído com sucesso!",
                         "Sucesso",
                         JOptionPane.INFORMATION_MESSAGE);
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(
-                        mainFrame,
-                        "Erro ao excluir produto: " + ex.getMessage(),
-                        "Erro de Persistência",
-                        JOptionPane.ERROR_MESSAGE);
-            }
+            }, ex -> JOptionPane.showMessageDialog(
+                    mainFrame,
+                    "Erro ao excluir produto: " + ex.getMessage(),
+                    "Erro de Persistência",
+                    JOptionPane.ERROR_MESSAGE));
         }
     }
 
     private void onSalvarProduto() {
+        Produto produto;
+        boolean novo;
         try {
             String codigoBarras = formView.getCodigoBarras();
             String nome = formView.getNome();
@@ -199,45 +205,44 @@ public class ProdutoController implements ProdutoObserver {
             }
 
             Long id = formView.getProdutoIdAtual();
-
-            if (id == null) {
-                // Modo Cadastro (Novo)
-                Produto novoProduto = new Produto(codigoBarras, nome, preco, quantidadeEstoque);
-                service.salvar(novoProduto);
-                JOptionPane.showMessageDialog(
-                        mainFrame,
-                        "Produto cadastrado com sucesso!",
-                        "Sucesso",
-                        JOptionPane.INFORMATION_MESSAGE);
-            } else {
-                // Modo Atualização (Edição)
-                Produto produtoAtualizado = new Produto(id, codigoBarras, nome, preco, quantidadeEstoque);
-                service.atualizar(produtoAtualizado);
-                JOptionPane.showMessageDialog(
-                        mainFrame,
-                        "Produto atualizado com sucesso!",
-                        "Sucesso",
-                        JOptionPane.INFORMATION_MESSAGE);
-            }
-
-            // Retorna à tela de listagem
-            mainFrame.mostrarLista();
+            novo = id == null;
+            produto = novo
+                    ? new Produto(codigoBarras, nome, preco, quantidadeEstoque)
+                    : new Produto(id, codigoBarras, nome, preco, quantidadeEstoque);
 
         } catch (IllegalArgumentException ex) {
-            // Erros de validação amigáveis ao usuário
             JOptionPane.showMessageDialog(
                     mainFrame,
                     ex.getMessage(),
                     "Validação de Dados",
                     JOptionPane.WARNING_MESSAGE);
-        } catch (Exception ex) {
-            // Erros inesperados de infraestrutura ou banco
+            return;
+        }
+
+        SwingTaskRunner.run(() -> {
+            if (novo) {
+                service.salvar(produto);
+            } else {
+                service.atualizar(produto);
+            }
+            return null;
+        }, ignored -> {
             JOptionPane.showMessageDialog(
                     mainFrame,
-                    "Falha na operação de persistência: " + ex.getMessage(),
-                    "Erro no Banco de Dados",
-                    JOptionPane.ERROR_MESSAGE);
-        }
+                    novo ? "Produto cadastrado com sucesso!" : "Produto atualizado com sucesso!",
+                    "Sucesso",
+                    JOptionPane.INFORMATION_MESSAGE);
+            mainFrame.mostrarLista();
+        }, this::mostrarErroDePersistencia);
+    }
+
+    private void mostrarErroDePersistencia(Throwable ex) {
+        boolean validacao = ex instanceof IllegalArgumentException;
+        JOptionPane.showMessageDialog(
+                mainFrame,
+                (validacao ? "" : "Falha na operação de persistência: ") + ex.getMessage(),
+                validacao ? "Validação de Dados" : "Erro no Banco de Dados",
+                validacao ? JOptionPane.WARNING_MESSAGE : JOptionPane.ERROR_MESSAGE);
     }
 
     // ==========================================

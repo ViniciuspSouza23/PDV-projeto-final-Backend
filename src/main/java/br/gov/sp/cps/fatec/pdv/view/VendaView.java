@@ -221,10 +221,10 @@ public class VendaView extends JPanel {
 
         formServicos.add(javax.swing.Box.createVerticalStrut(10));
 
-        // Linha 2: Preço Ajustado em Destaque, Quantidade e Botão Adicionar
-        JPanel linhaServ2 = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        // Linha 2: Preço ajustado em destaque
+        JPanel linhaServ2 = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         linhaServ2.setOpaque(false);
-        linhaServ2.setMaximumSize(new Dimension(Short.MAX_VALUE, 36));
+        linhaServ2.setMaximumSize(new Dimension(Short.MAX_VALUE, 34));
 
         // Badge estilizada de Preço Calculado
         JPanel badgePreco = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 4));
@@ -234,17 +234,25 @@ public class VendaView extends JPanel {
         lblPrecoServicoAjustado.setForeground(new Color(22, 101, 52));
         badgePreco.add(lblPrecoServicoAjustado);
         linhaServ2.add(badgePreco);
+        formServicos.add(linhaServ2);
 
-        linhaServ2.add(new JLabel("Qtd:"));
+        formServicos.add(javax.swing.Box.createVerticalStrut(8));
+
+        // Linha 3: Quantidade e ação agrupadas e alinhadas à direita
+        JPanel linhaServ3 = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        linhaServ3.setOpaque(false);
+        linhaServ3.setMaximumSize(new Dimension(Short.MAX_VALUE, 36));
+
+        linhaServ3.add(new JLabel("Qtd:"));
         spQtdServico.setPreferredSize(new Dimension(60, 32));
-        linhaServ2.add(spQtdServico);
+        linhaServ3.add(spQtdServico);
 
         btnAdicionarServico.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        btnAdicionarServico.setPreferredSize(new Dimension(175, 34));
+        btnAdicionarServico.setPreferredSize(new Dimension(160, 34));
         btnAdicionarServico.setBackground(new Color(5, 150, 105));
         btnAdicionarServico.setForeground(Color.WHITE);
-        linhaServ2.add(btnAdicionarServico);
-        formServicos.add(linhaServ2);
+        linhaServ3.add(btnAdicionarServico);
+        formServicos.add(linhaServ3);
 
         tabServicos.add(formServicos, BorderLayout.NORTH);
 

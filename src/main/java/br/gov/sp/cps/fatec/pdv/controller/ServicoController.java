@@ -31,18 +31,24 @@ public class ServicoController implements ServicoObserver {
 
     public void inicializar() {
         this.service.addObserver(this);
-        this.service.notificarObservadores();
+        recarregar();
     }
 
     public void recarregar() {
-        this.service.notificarObservadores();
+        SwingTaskRunner.run(() -> {
+            service.notificarObservadores();
+            return null;
+        }, ignored -> {
+        }, error -> JOptionPane.showMessageDialog(mainFrame,
+                "Não foi possível carregar os serviços:\n" + error.getMessage(),
+                "Erro de persistência", JOptionPane.ERROR_MESSAGE));
     }
 
     private void vincularEventos() {
         view.getBtnNovo().addActionListener(e -> onNovoServico());
         view.getBtnEditar().addActionListener(e -> onEditarServico());
         view.getBtnExcluir().addActionListener(e -> onExcluirServico());
-        view.getBtnRecarregar().addActionListener(e -> service.notificarObservadores());
+        view.getBtnRecarregar().addActionListener(e -> recarregar());
     }
 
     private void onNovoServico() {
@@ -65,19 +71,18 @@ public class ServicoController implements ServicoObserver {
                 JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 
         if (resultado == JOptionPane.OK_OPTION) {
+            Servico servico;
             try {
                 BigDecimal preco = new BigDecimal(txtPreco.getText().trim().replace(",", "."));
-                Servico servico = new Servico(txtNome.getText().trim(), preco, chkAjustaPorte.isSelected(),
+                servico = new Servico(txtNome.getText().trim(), preco, chkAjustaPorte.isSelected(),
                         txtDescricao.getText().trim());
-                service.salvar(servico);
-                JOptionPane.showMessageDialog(mainFrame, "Serviço cadastrado com sucesso!", "Sucesso",
-                        JOptionPane.INFORMATION_MESSAGE);
             } catch (NumberFormatException ex) {
                 JOptionPane.showMessageDialog(mainFrame, "Preço inválido. Digite um número decimal (ex: 50.00).",
                         "Validação", JOptionPane.WARNING_MESSAGE);
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(mainFrame, ex.getMessage(), "Validação", JOptionPane.WARNING_MESSAGE);
+                return;
             }
+            executarOperacao(() -> service.salvar(servico), "Serviço cadastrado com sucesso!",
+                    "Não foi possível cadastrar o serviço: ");
         }
     }
 
@@ -109,21 +114,19 @@ public class ServicoController implements ServicoObserver {
                 JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 
         if (resultado == JOptionPane.OK_OPTION) {
+            Servico atualizado;
             try {
                 BigDecimal preco = new BigDecimal(txtPreco.getText().trim().replace(",", "."));
-                selecionado.setNome(txtNome.getText().trim());
-                selecionado.setPrecoBase(preco);
-                selecionado.setPermiteMultiplicadorPorte(chkAjustaPorte.isSelected());
-                selecionado.setDescricao(txtDescricao.getText().trim());
-                service.atualizar(selecionado);
-                JOptionPane.showMessageDialog(mainFrame, "Serviço atualizado com sucesso!", "Sucesso",
-                        JOptionPane.INFORMATION_MESSAGE);
+                atualizado = new Servico(txtNome.getText().trim(), preco, chkAjustaPorte.isSelected(),
+                        txtDescricao.getText().trim());
+                atualizado.setId(selecionado.getId());
             } catch (NumberFormatException ex) {
                 JOptionPane.showMessageDialog(mainFrame, "Preço inválido. Digite um número decimal.",
                         "Validação", JOptionPane.WARNING_MESSAGE);
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(mainFrame, ex.getMessage(), "Validação", JOptionPane.WARNING_MESSAGE);
+                return;
             }
+            executarOperacao(() -> service.atualizar(atualizado), "Serviço atualizado com sucesso!",
+                    "Não foi possível atualizar o serviço: ");
         }
     }
 
@@ -140,15 +143,22 @@ public class ServicoController implements ServicoObserver {
                 "Confirmar Exclusão de Serviço", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
 
         if (resp == JOptionPane.YES_OPTION) {
-            try {
-                service.excluir(selecionado.getId());
-                JOptionPane.showMessageDialog(mainFrame, "Serviço excluído com sucesso!", "Sucesso",
-                        JOptionPane.INFORMATION_MESSAGE);
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(mainFrame, "Erro ao excluir serviço: " + ex.getMessage(),
-                        "Erro", JOptionPane.ERROR_MESSAGE);
-            }
+            executarOperacao(() -> service.excluir(selecionado.getId()), "Serviço excluído com sucesso!",
+                    "Erro ao excluir serviço: ");
         }
+    }
+
+    private void executarOperacao(Runnable operacao, String mensagemSucesso, String mensagemErro) {
+        SwingTaskRunner.run(() -> {
+            operacao.run();
+            return null;
+        }, ignored -> JOptionPane.showMessageDialog(mainFrame, mensagemSucesso, "Sucesso",
+                JOptionPane.INFORMATION_MESSAGE), error -> {
+            boolean validacao = error instanceof IllegalArgumentException;
+            JOptionPane.showMessageDialog(mainFrame, mensagemErro + error.getMessage(),
+                    validacao ? "Validação" : "Erro",
+                    validacao ? JOptionPane.WARNING_MESSAGE : JOptionPane.ERROR_MESSAGE);
+        });
     }
 
     @Override
