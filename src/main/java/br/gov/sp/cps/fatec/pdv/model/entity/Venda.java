@@ -20,6 +20,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Entity
 @Table(name = "vendas")
@@ -112,6 +113,15 @@ public class Venda {
 
     public List<ItemVenda> getItens() {
         return itens;
+    }
+
+    public String getPetsResumo() {
+        return itens.stream()
+                .map(ItemVenda::getPetNome)
+                .filter(nome -> nome != null && !nome.isBlank())
+                .map(String::trim)
+                .distinct()
+                .collect(Collectors.joining(", "));
     }
 
     public void setDataHora(LocalDateTime dataHora) {

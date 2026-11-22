@@ -261,6 +261,8 @@ public class VendaController implements ProdutoObserver, ClienteObserver, Servic
             }
         }
         detalhes.append("Tutor/Cliente: ").append(cliente != null ? cliente : "Consumidor não identificado").append("\n");
+        String pets = venda.getPetsResumo();
+        detalhes.append("Pet(s): ").append(pets.isBlank() ? "Não informado" : pets).append("\n");
         detalhes.append("Pagamento: ").append(venda.getFormaPagamento()).append("\n\nItens:\n");
 
         for (ItemVenda item : venda.getItens()) {

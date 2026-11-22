@@ -89,6 +89,7 @@ class VendaServiceTest {
         assertEquals(1, historico.getItens().size());
         assertEquals("Produto vendido", historico.getItens().get(0).getProdutoNome());
         assertEquals(new BigDecimal("3.49"), historico.getItens().get(0).getPrecoUnitario());
+        assertEquals("", historico.getPetsResumo());
     }
 
     @Test
@@ -147,10 +148,43 @@ class VendaServiceTest {
         assertEquals("Felipe Massa", venda.getClienteNome());
         assertEquals(tutor.getId(), venda.getCliente().getId());
         assertEquals(2, venda.getItens().size());
+        assertEquals("Max", venda.getPetsResumo());
 
         // Baixa atômica no estoque de ração (10 - 1 = 9)
         Produto racaoAtualizada = produtoRepository.buscarPorId(racao.getId()).orElseThrow();
         assertEquals(9, racaoAtualizada.getQuantidadeEstoque());
+
+        Venda historico = vendaService.listarTodas().stream()
+                .filter(item -> item.getId().equals(venda.getId()))
+                .findFirst()
+                .orElseThrow();
+        assertEquals("Max", historico.getPetsResumo());
+        Pet petPersistido = petRepository.buscarPorId(pet.getId()).orElseThrow();
+        assertEquals(tutor.getId(), petPersistido.getTutor().getId());
+        assertEquals(1, clienteRepository.buscarPorId(tutor.getId()).orElseThrow().getPets().size());
+    }
+
+    @Test
+    @DisplayName("Não deve associar à venda um pet pertencente a outro tutor")
+    void deveRejeitarPetDeOutroTutorNaVenda() {
+        Cliente tutorDoPet = clienteRepository.salvar(new Cliente(
+                "Tutor do Pet", UUID.randomUUID().toString().substring(0, 11), "11911112222", null));
+        Cliente tutorDaVenda = clienteRepository.salvar(new Cliente(
+                "Tutor da Venda", UUID.randomUUID().toString().substring(0, 11), "11933334444", null));
+        Pet pet = petRepository.salvar(
+                new Pet("Luna", Especie.GATO, "Siamês", Porte.PEQUENO, null, tutorDoPet));
+        Servico consulta = servicoRepository.salvar(
+                new Servico("Consulta", new BigDecimal("80.00"), false, null));
+        ItemVenda item = ItemVenda.criarItemServico(
+                consulta.getId(), consulta.getNome(), pet.getId(), pet.getNome(), consulta.getPrecoBase(), 1);
+
+        IllegalArgumentException erro = assertThrows(IllegalArgumentException.class,
+                () -> vendaService.finalizarVendaHibrida(
+                        tutorDaVenda, null, FormaPagamento.PIX, List.of(item)));
+
+        assertTrue(erro.getMessage().contains("não pertence ao tutor selecionado"));
+        Pet petPersistido = petRepository.buscarPorId(pet.getId()).orElseThrow();
+        assertEquals(tutorDoPet.getId(), petPersistido.getTutor().getId());
     }
 
     private Produto salvarProduto(String nome, String preco, int estoque) {

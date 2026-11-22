@@ -77,17 +77,18 @@ Ao término desta aula de 50 minutos, os discentes deverão atingir os seguintes
 | **Tutores e pets** | Cadastro, edição e exclusão de tutores; inclusão e remoção de pets vinculados; espécie, raça, porte e observações. |
 | **Serviços** | Cadastro, edição, listagem e exclusão; preço-base e opção de aplicar multiplicador conforme o porte do pet. |
 | **Caixa / vendas** | Carrinho misto de produtos e serviços, tutor cadastrado ou cliente avulso, pet associado quando selecionado, forma de pagamento e confirmação da venda. |
-| **Histórico** | Consulta de vendas anteriores e detalhes dos itens, quantidades, valores, tutor/cliente e forma de pagamento. |
+| **Histórico** | Consulta de vendas anteriores e detalhes dos itens, quantidades, valores, tutor/cliente, pet(s) associados e forma de pagamento. |
 
 ### 3.2. Regras de negócio principais
 
 - Produto exige código de barras e nome; o preço deve ser maior que zero e o estoque deve ser zero ou positivo.
-- Tutor exige nome, CPF e telefone. O CPF é único, mas o sistema didático não valida os dígitos verificadores do documento.
+- Tutor exige nome, CPF e telefone. O CPF deve ter 11 dígitos e verificadores válidos; aceita entrada com ou sem pontuação e é armazenado no formato `000.000.000-00`. Isso não confirma emissão nem titularidade do documento.
 - Pet exige nome, raça, espécie e porte; o cadastro associa o animal a um tutor.
 - Serviço exige nome e preço-base positivo. Serviços com ajuste por porte usam os multiplicadores `1,00`, `1,25`, `1,50` e `1,80` para portes pequeno, médio, grande e gigante.
 - Venda exige forma de pagamento e pelo menos um item. Quantidades e valores unitários precisam ser positivos.
 - Produtos têm o estoque verificado e decrementado na mesma transação que grava a venda e seus itens. Falha de estoque causa rollback; serviços não consomem estoque físico.
-- Os itens guardam descrição e preço do momento da venda, para que alterações futuras no catálogo não mudem o histórico financeiro.
+- Os itens guardam descrição, preço e, quando selecionado, o nome do pet no momento da venda, para que alterações futuras no cadastro não apaguem a associação exibida no histórico.
+- Quando um tutor está selecionado, a persistência confirma que cada pet associado aos itens pertence a esse tutor. Essa checagem impede que uma troca de tutor com itens antigos no carrinho crie uma associação inconsistente; a venda nunca altera o vínculo tutor–pet.
 - Inicialização não exclui produtos nem altera saldos existentes. Dados demonstrativos são inseridos apenas quando os respectivos cadastros estão vazios.
 
 ### 3.3. Roteiro de uso da aplicação
@@ -97,7 +98,7 @@ Ao término desta aula de 50 minutos, os discentes deverão atingir os seguintes
 3. Em **Serviços**, cadastre os serviços e defina se o preço varia conforme o porte.
 4. Em **Caixa / Vendas**, selecione tutor e pet quando aplicável; adicione produtos, serviços e quantidades.
 5. Selecione a forma de pagamento e finalize. O sistema apresenta o total, limpa o carrinho e atualiza o histórico.
-6. Consulte a venda pelo histórico para apresentar os itens e os valores registrados.
+6. Consulte a venda pelo histórico para apresentar tutor, pet(s) associados, itens e valores registrados. Se nenhum pet foi associado aos itens, o histórico informa que não há pet registrado.
 
 Para demonstrar o rollback, prepare um produto com estoque menor que a quantidade solicitada e tente finalizar a venda. A operação deve ser recusada sem gravar a venda nem baixar parcialmente o estoque. Depois, ajuste o saldo na tela de produtos e repita o fluxo.
 
@@ -422,7 +423,7 @@ classDiagram
 
 ### 5.5. Modelo de dados
 
-O diagrama representa as entidades e os vínculos principais. `produto_id`, `servico_id` e `pet_id` em `ItemVenda` são identificadores opcionais armazenados como valores, não associações JPA com chave estrangeira. O item conserva também descrição e preço unitário históricos.
+O diagrama representa as entidades e os vínculos principais. `produto_id`, `servico_id` e `pet_id` em `ItemVenda` são identificadores opcionais armazenados como valores, não associações JPA com chave estrangeira. O item conserva também descrição, preço unitário e nome do pet como dados históricos; o resumo de pets da venda é calculado a partir dos itens, sem exigir uma nova coluna na tabela `vendas`.
 
 ```mermaid
 erDiagram
@@ -686,13 +687,13 @@ A suíte cobre os seguintes comportamentos:
 | Área | Cobertura |
 | :--- | :--- |
 | Repositório de produtos | Persistência e operações CRUD em H2 de teste |
-| Serviços de produto e cliente | Validações, vínculo tutor/pet e notificações quando aplicável |
+| Serviços de produto e cliente | Validações, CPF com dígitos verificadores, vínculo tutor/pet e notificações quando aplicável |
 | Venda | Venda mista, atualização de estoque, histórico e rollback em falhas |
 | Strategy | Cálculo do preço de serviço conforme porte |
 | Inicialização | Preservação de produtos e saldos já existentes ao preparar dados demonstrativos |
 | SwingTaskRunner | Execução da tarefa fora da EDT e retorno do callback na EDT |
 
-Na última validação deste projeto, `mvnw.cmd test` executou **23 testes**, sem falhas.
+Na última validação deste projeto, `mvnw.cmd test` executou **26 testes**, sem falhas.
 
 ### 8.5. Observações de execução
 

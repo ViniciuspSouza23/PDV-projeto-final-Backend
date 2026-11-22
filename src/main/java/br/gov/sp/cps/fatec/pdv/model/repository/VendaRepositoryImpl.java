@@ -67,6 +67,7 @@ public class VendaRepositoryImpl implements VendaRepository {
                     venda.setCliente(clienteGerenciado);
                 }
             }
+            validarPetsDoTutor(em, venda.getCliente(), itens);
 
             // Ordena produtos por ID para prevenir deadlocks em concorrência
             List<ItemVenda> produtosItens = itens.stream()
@@ -97,9 +98,10 @@ public class VendaRepositoryImpl implements VendaRepository {
 
             for (ItemVenda itemProduto : produtosItens) {
                 Produto produto = em.find(Produto.class, itemProduto.getProdutoId());
+                Pet pet = itemProduto.getPetId() == null ? null : em.find(Pet.class, itemProduto.getPetId());
                 // Cria entidade gerenciada nova e transiente para a persistência mantendo vínculo com o Pet se houver
                 ItemVenda novoItem = ItemVenda.criarItemProduto(produto.getId(),
-                        produto.getNome(), itemProduto.getPetId(), itemProduto.getPetNome(),
+                        produto.getNome(), itemProduto.getPetId(), pet != null ? pet.getNome() : null,
                         produto.getPreco(), itemProduto.getQuantidade());
                 if (itemProduto.getProdutoNome() != null && !itemProduto.getProdutoNome().isBlank()) {
                     novoItem.setProdutoNome(itemProduto.getProdutoNome());
@@ -150,6 +152,27 @@ public class VendaRepositoryImpl implements VendaRepository {
         } finally {
             if (em.isOpen()) {
                 em.close();
+            }
+        }
+    }
+
+    private void validarPetsDoTutor(EntityManager em, Cliente tutor, List<ItemVenda> itens) {
+        if (tutor == null || tutor.getId() == null) {
+            return;
+        }
+
+        for (ItemVenda item : itens) {
+            if (item.getPetId() == null) {
+                continue;
+            }
+
+            Pet pet = em.find(Pet.class, item.getPetId());
+            if (pet == null) {
+                throw new IllegalArgumentException("Pet não encontrado: " + item.getPetId());
+            }
+            if (!Objects.equals(tutor.getId(), pet.getTutor().getId())) {
+                throw new IllegalArgumentException(
+                        "O pet '" + pet.getNome() + "' não pertence ao tutor selecionado.");
             }
         }
     }

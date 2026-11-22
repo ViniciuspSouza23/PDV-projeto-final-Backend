@@ -261,14 +261,14 @@ public class Main {
 
         if (clienteRepo.listarTodos().isEmpty()) {
             System.out.println("[PetPDV] Populando tutores e pets de demonstração...");
-            Cliente tutor1 = clienteRepo.salvar(new Cliente("Carlos Eduardo Mendes", "123.456.789-00",
+            Cliente tutor1 = clienteRepo.salvar(new Cliente("Carlos Eduardo Mendes", "321.654.987-91",
                     "(11) 98765-4321", "carlos.mendes@email.com"));
             petRepo.salvar(new Pet("Thor", Especie.CACHORRO, "Golden Retriever", Porte.GRANDE,
                     "Muito dócil, adora água", tutor1));
             petRepo.salvar(new Pet("Luna", Especie.CACHORRO, "Shih Tzu", Porte.PEQUENO,
                     "Pele sensível, usar shampoo hipoalergênico", tutor1));
 
-            Cliente tutor2 = clienteRepo.salvar(new Cliente("Juliana Silveira Rocha", "987.654.321-99",
+            Cliente tutor2 = clienteRepo.salvar(new Cliente("Juliana Silveira Rocha", "987.654.321-00",
                     "(11) 91234-5678", "juliana.rocha@email.com"));
             petRepo.salvar(new Pet("Mingau", Especie.GATO, "Siamês", Porte.PEQUENO,
                     "Arredio com barulho de secador", tutor2));

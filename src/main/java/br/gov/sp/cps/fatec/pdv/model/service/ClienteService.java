@@ -56,7 +56,7 @@ public class ClienteService {
     public Cliente salvar(Cliente cliente) {
         validarCliente(cliente);
 
-        Optional<Cliente> existente = clienteRepository.buscarPorCpf(cliente.getCpf());
+        Optional<Cliente> existente = buscarPorCpfCadastrado(cliente.getCpf());
         if (existente.isPresent()) {
             throw new IllegalArgumentException("Já existe um tutor cadastrado com o CPF informado: " + cliente.getCpf());
         }
@@ -72,7 +72,7 @@ public class ClienteService {
         }
         validarCliente(cliente);
 
-        Optional<Cliente> existente = clienteRepository.buscarPorCpf(cliente.getCpf());
+        Optional<Cliente> existente = buscarPorCpfCadastrado(cliente.getCpf());
         if (existente.isPresent() && !existente.get().getId().equals(cliente.getId())) {
             throw new IllegalArgumentException("O CPF informado já pertence a outro tutor cadastrado: " + cliente.getCpf());
         }
@@ -95,7 +95,10 @@ public class ClienteService {
     }
 
     public Optional<Cliente> buscarPorCpf(String cpf) {
-        return clienteRepository.buscarPorCpf(cpf);
+        if (cpf == null || cpf.trim().isEmpty()) {
+            return Optional.empty();
+        }
+        return buscarPorCpfCadastrado(normalizarCpf(cpf));
     }
 
     public List<Cliente> listarTodos() {
@@ -149,8 +152,60 @@ public class ClienteService {
         if (cliente.getCpf() == null || cliente.getCpf().trim().isEmpty()) {
             throw new IllegalArgumentException("O CPF do tutor é obrigatório.");
         }
+        cliente.setCpf(normalizarCpf(cliente.getCpf()));
         if (cliente.getTelefone() == null || cliente.getTelefone().trim().isEmpty()) {
             throw new IllegalArgumentException("O telefone do tutor é obrigatório.");
         }
+    }
+
+    private Optional<Cliente> buscarPorCpfCadastrado(String cpfFormatado) {
+        Optional<Cliente> encontrado = clienteRepository.buscarPorCpf(cpfFormatado);
+        if (encontrado.isPresent()) {
+            return encontrado;
+        }
+
+        String cpfNumerico = cpfFormatado.replace(".", "").replace("-", "");
+        return clienteRepository.buscarPorCpf(cpfNumerico);
+    }
+
+    private static String normalizarCpf(String cpf) {
+        if (cpf == null) {
+            throw new IllegalArgumentException("O CPF do tutor é obrigatório.");
+        }
+
+        String valor = cpf.trim();
+        String digitos;
+        if (valor.matches("\\d{11}")) {
+            digitos = valor;
+        } else if (valor.matches("\\d{3}\\.\\d{3}\\.\\d{3}-\\d{2}")) {
+            digitos = valor.replace(".", "").replace("-", "");
+        } else {
+            throw new IllegalArgumentException(
+                    "CPF inválido. Informe 11 dígitos, com ou sem a pontuação padrão.");
+        }
+
+        if (digitos.chars().allMatch(caractere -> caractere == digitos.charAt(0))) {
+            throw new IllegalArgumentException("CPF inválido. Sequências de dígitos repetidos não são aceitas.");
+        }
+
+        int primeiroDigito = calcularDigitoVerificador(digitos.substring(0, 9));
+        int segundoDigito = calcularDigitoVerificador(digitos.substring(0, 9) + primeiroDigito);
+        if (digitos.charAt(9) - '0' != primeiroDigito || digitos.charAt(10) - '0' != segundoDigito) {
+            throw new IllegalArgumentException("CPF inválido. Os dígitos verificadores não conferem.");
+        }
+
+        return digitos.substring(0, 3) + "." + digitos.substring(3, 6) + "."
+                + digitos.substring(6, 9) + "-" + digitos.substring(9);
+    }
+
+    private static int calcularDigitoVerificador(String base) {
+        int soma = 0;
+        int peso = base.length() + 1;
+        for (int i = 0; i < base.length(); i++) {
+            soma += (base.charAt(i) - '0') * peso--;
+        }
+
+        int resto = soma % 11;
+        return resto < 2 ? 0 : 11 - resto;
     }
 }

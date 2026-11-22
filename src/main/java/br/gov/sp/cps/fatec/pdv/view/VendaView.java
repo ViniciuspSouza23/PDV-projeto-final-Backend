@@ -80,7 +80,7 @@ public class VendaView extends JPanel {
 
     // Histórico
     private final DefaultTableModel modeloHistorico = new DefaultTableModel(
-            new Object[]{"Venda #", "Data e Hora", "Tutor / Cliente", "Forma Pagamento", "Total"}, 0) {
+            new Object[]{"Venda #", "Data e Hora", "Tutor / Cliente", "Pet(s)", "Forma Pagamento", "Total"}, 0) {
         @Override
         public boolean isCellEditable(int row, int column) {
             return false;
@@ -562,11 +562,13 @@ public class VendaView extends JPanel {
             if (tutorNome == null || tutorNome.isBlank()) {
                 tutorNome = "Consumidor não identificado";
             }
+            String pets = v.getPetsResumo();
 
             modeloHistorico.addRow(new Object[]{
                     v.getId(),
                     v.getDataHora().format(DATA_HORA),
                     tutorNome,
+                    pets.isBlank() ? "—" : pets,
                     v.getFormaPagamento(),
                     MOEDA.format(v.getTotal())
             });
